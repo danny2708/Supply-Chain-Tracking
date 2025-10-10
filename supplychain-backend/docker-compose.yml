@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: supplychain
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  ganache:
+    image: trufflesuite/ganache-cli:latest
+    command: ["-h","0.0.0.0","-p","7545","--deterministic"]
+    ports:
+      - "7545:7545"
+volumes:
+  pgdata:
