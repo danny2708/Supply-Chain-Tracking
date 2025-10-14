@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "nodemon src/index.js",
+    "compile": "npx hardhat compile",
+    "deploy": "node scripts/deploy_and_sync.js",
+    "deploy:hardhat": "npx hardhat run scripts/deploy.js --network localhost",
     "start": "node src/index.js"
   },
   "dependencies": {
