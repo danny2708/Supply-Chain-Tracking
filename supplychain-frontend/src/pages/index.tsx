@@ -8,8 +8,8 @@ export default function Home() {
     async function init() {
       try {
         // Kết nối ví và gọi contract
-        const { signer } = await connectWallet();
-        const contract = getContract(signer);
+        await connectWallet();
+        const { contract } = await getContract(true);
 
         // Gọi thử hàm từ contract (nếu có, ví dụ getAllProducts hoặc name)
         if (contract.name) {

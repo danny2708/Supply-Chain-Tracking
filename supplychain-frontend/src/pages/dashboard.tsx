@@ -10,7 +10,7 @@ export default function Dashboard() {
   const handleConnect = async () => {
     try {
       const { signer, address } = await connectWallet();
-      const sc = getContract(signer);
+      const { contract: sc } = await getContract(true);
       setContract(sc);
       setAccount(address);
       alert(`Đã kết nối ví: ${address}`);
@@ -26,7 +26,7 @@ export default function Dashboard() {
     const code = prompt("Nhập mã sản phẩm:");
     if (!name || !code) return;
     try {
-      const tx = await contract.addProduct(name, code);
+      const tx = await contract.createProduct(name, code);
       await tx.wait();
       alert("🎉 Đã tạo sản phẩm thành công!");
       await loadProducts(); // tải lại danh sách
