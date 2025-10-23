@@ -59,7 +59,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'supply_chain_tracking',
         'USER': 'postgres',
-        'PASSWORD': '0comatkhau',
+        'PASSWORD': 'chuvoiconobandon',
         'HOST': 'localhost', # Hoặc địa chỉ server DB
         'PORT': '5432',
     }

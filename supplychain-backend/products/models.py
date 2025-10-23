@@ -20,7 +20,7 @@ class Product(models.Model):
 
     class Meta:
         db_table = 'product' # Tên bảng THẬT
-        managed = False      # CẤM đụng vào
+        managed = False      # CẤM đụng vào 
     
     def __str__(G):
         return f"{self.name} ({self.product_id})"
