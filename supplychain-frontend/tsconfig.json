@@ -9,6 +9,12 @@
     "skipLibCheck": true,
     "strict": false,
     "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
     "module": "ESNext",
     "moduleResolution": "Node",
     "resolveJsonModule": true,
@@ -16,10 +22,16 @@
     "jsx": "preserve",
     "esModuleInterop": true,
     "noEmit": true,
-    "incremental": true
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
-    "src"
+    "src",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
