@@ -57,7 +57,7 @@ MIDDLEWARE = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'supply_chain_tracking',
+        'NAME': 'postgres',
         'USER': 'postgres',
         'PASSWORD': 'chuvoiconobandon',
         'HOST': 'localhost', # Hoặc địa chỉ server DB
