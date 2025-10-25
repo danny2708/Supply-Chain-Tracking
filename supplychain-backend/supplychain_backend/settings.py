@@ -1,8 +1,32 @@
 # supplychain_backend/settings.py
-SECRET_KEY = 'maomaoisgoodcat3'
+import os
+from pathlib import Path
+import environ
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+env = environ.Env(
+    # Định nghĩa kiểu dữ liệu mặc định cho các biến env
+    DEBUG=(bool, False),
+    CONTRACT_ADDRESS=(str, ""), # Khai báo kiểu string mặc định rỗng
+    BLOCKCHAIN_PROVIDER_URL=(str, "http://localhost:8545") # Khai báo kiểu string
+)
+# Đọc file .env
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
+SECRET_KEY = env('SECRET_KEY') # Tốt hơn nên dùng env() cho SECRET_KEY
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = env('DEBUG')
+
+# === KHAI BÁO BIẾN BLOCKCHAIN ===
+CONTRACT_ADDRESS = env('CONTRACT_ADDRESS')
+BLOCKCHAIN_PROVIDER_URL = env('BLOCKCHAIN_PROVIDER_URL')
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.Account'  # Trỏ đến app 'users' và model 'Account'
-DEBUG = True
+
+
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 INSTALLED_APPS = [
     'django.contrib.admin',
