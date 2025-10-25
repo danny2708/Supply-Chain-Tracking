@@ -12,8 +12,8 @@ class Command(BaseCommand):
         self.stdout.write("🎧 Bắt đầu lắng nghe sự kiện blockchain...")
 
         # Tạo filter cho các sự kiện bạn quan tâm
-        product_filter = supply_chain_contract.events.ProductCreated.create_filter(fromBlock='latest')
-        stage_filter = supply_chain_contract.events.StageUpdated.create_filter(fromBlock='latest')
+        product_filter = supply_chain_contract.events.ProductCreated.create_filter(from_block='latest')
+        stage_filter = supply_chain_contract.events.StageUpdated.create_filter(from_block='latest')
 
         while True:
             try:
