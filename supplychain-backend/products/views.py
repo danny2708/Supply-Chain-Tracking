@@ -7,12 +7,15 @@ from rest_framework.permissions import AllowAny # Cho phép ai cũng có thể q
 
 from .models import Product
 from .serializers import ProductSerializer
+from rest_framework.permissions import IsAuthenticated
 
 # Import service kết nối blockchain bạn đã tạo (ở bước 1)
 try:
-    from app.services.blockchain_service import supply_chain_contract
+    from app.services.blockchain_service import w3, backend_account, supply_chain_contract
 except ImportError:
     supply_chain_contract = None
+    w3 = None
+    backend_account = None
 
 # ---
 # API ĐỌC TỪ DATABASE (Do listener đồng bộ về)
@@ -81,3 +84,42 @@ class ProductDetailOnChainView(APIView):
         except Exception as e:
             # Lỗi này thường xảy ra nếu product_id không tồn tại trên contract
             return Response({"error": "Sản phẩm không tìm thấy trên blockchain.", "details": str(e)}, status=404)
+
+
+class ProductBatchCreateView(APIView):
+    permission_classes = [IsAuthenticated] # Yêu cầu user phải login
+
+    def post(self, request):
+        # 1. Xác thực vai trò (bạn cần tự implement logic này)
+        # if not request.user.role == 'producer':
+        #    return Response({"error": "Không có quyền"}, status=403)
+
+        # 2. Lấy data (giả sử dạng [{name: "A"}, {name: "B"}])
+        products_data = request.data.get('products')
+        names = [p['name'] for p in products_data]
+        descriptions = [p['description'] for p in products_data]
+
+        try:
+            # 3. Build transaction gọi hàm batch
+            tx = supply_chain_contract.functions.createProductBatch(
+                _names=names,
+                _descriptions=descriptions
+            ).build_transaction({
+                'from': backend_account.address,
+                'nonce': w3.eth.get_transaction_count(backend_account.address),
+                'gas': 2000000, # Cần ước lượng gas cẩn thận
+                'gasPrice': w3.eth.gas_price
+            })
+            
+            # 4. Ký và Gửi
+            signed_tx = w3.eth.account.sign_transaction(tx, private_key=backend_account.privateKey)
+            tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            
+            # 5. Trả về ngay lập tức (không cần chờ receipt)
+            return Response({
+                "message": f"Đã gửi yêu cầu tạo {len(names)} sản phẩm.",
+                "tx_hash": tx_hash.hex()
+            }, status=202) # 202 Accepted
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
