@@ -76,10 +76,10 @@ async function main() {
 
   // Update backend .env
   const backendEnvPath = path.resolve(__dirname, "../.env");
-  await setEnvVar(backendEnvPath, "SUPPLYCHAIN_ADDRESS", address);
+  await setEnvVar(backendEnvPath, "CONTRACT_ADDRESS", address);
   await setEnvVar(backendEnvPath, "NEXT_PUBLIC_CONTRACT_ADDRESS", address);
   await setEnvVar(backendEnvPath, "NETWORK", networkName);
-  await setEnvVar(backendEnvPath, "RPC_URL", rpcUrl);
+  await setEnvVar(backendEnvPath, "BLOCKCHAIN_PROVIDER_URL", rpcUrl);
 
   // Update frontend .env.local
   const frontendEnvLocalPath = path.resolve(__dirname, "../../supplychain-frontend/.env.local");

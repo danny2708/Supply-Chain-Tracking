@@ -22,5 +22,5 @@ class Product(models.Model):
         db_table = 'product' # Tên bảng THẬT
         managed = False      # CẤM đụng vào 
     
-    def __str__(G):
+    def __str__(self):
         return f"{self.name} ({self.product_id})"

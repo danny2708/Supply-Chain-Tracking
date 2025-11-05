@@ -2,11 +2,6 @@
   "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
   "abi": [
     {
-      "inputs": [],
-      "stateMutability": "nonpayable",
-      "type": "constructor"
-    },
-    {
       "anonymous": false,
       "inputs": [
         {
@@ -76,29 +71,10 @@
           "internalType": "address",
           "name": "updater",
           "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "note",
-          "type": "string"
         }
       ],
       "name": "StageUpdated",
       "type": "event"
-    },
-    {
-      "inputs": [],
-      "name": "admin",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
     },
     {
       "inputs": [
@@ -119,21 +95,36 @@
       "type": "function"
     },
     {
-      "inputs": [
+      "inputs": [],
+      "name": "getAllProducts",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "ids",
+          "type": "uint256[]"
+        },
         {
           "internalType": "string[]",
-          "name": "_names",
+          "name": "names",
           "type": "string[]"
         },
         {
           "internalType": "string[]",
-          "name": "_descriptions",
+          "name": "descriptions",
+          "type": "string[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "owners",
+          "type": "address[]"
+        },
+        {
+          "internalType": "string[]",
+          "name": "stages",
           "type": "string[]"
         }
       ],
-      "name": "createProductBatch",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -167,9 +158,14 @@
           "type": "address"
         },
         {
-          "internalType": "enum SupplyChain.StageType",
+          "internalType": "string",
           "name": "stage",
-          "type": "uint8"
+          "type": "string"
+        },
+        {
+          "internalType": "string[]",
+          "name": "history",
+          "type": "string[]"
         }
       ],
       "stateMutability": "view",

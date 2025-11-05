@@ -1,61 +1,113 @@
-# app/management/commands/listen_events.py
+# products/management/commands/listen_events.py
 import time
+import traceback # 👈 THÊM DÒNG NÀY
 from django.core.management.base import BaseCommand
-from app.services.blockchain_service import supply_chain_contract
+from django.db import transaction
+from django.utils import timezone 
+from app.services.blockchain_service import supply_chain_contract, w3
 from products.models import Product
-from tracking.models import TrackingEvent # Import model Django của bạn
+from tracking.models import TrackingEvent 
 
 class Command(BaseCommand):
-    help = 'Lắng nghe sự kiện từ Smart Contract và đồng bộ vào DB'
+    help = 'Lắng nghe sự kiện (mẫu Polling V4 - Đáng tin cậy)'
 
     def handle(self, *args, **options):
-        self.stdout.write("🎧 Bắt đầu lắng nghe sự kiện blockchain...")
+        if not all([supply_chain_contract, w3]):
+            self.stderr.write(self.style.ERROR('Contract/Web3 chưa khởi tạo.'))
+            return
 
-        # Tạo filter cho các sự kiện bạn quan tâm
-        product_filter = supply_chain_contract.events.ProductCreated.create_filter(from_block=0)
-        stage_filter = supply_chain_contract.events.StageUpdated.create_filter(from_block=0)
+        self.stdout.write("🎧 Bắt đầu lắng nghe (mẫu V4)...")
+        last_processed_block = 0 # Bắt đầu quét từ block 0
 
         while True:
             try:
-                # Lắng nghe sự kiện ProductCreated
-                for event in product_filter.get_new_entries():
-                    self.handle_product_created(event)
+                latest_block = w3.eth.block_number
+                if latest_block <= last_processed_block:
+                    time.sleep(2)
+                    continue
 
-                # Lắng nghe sự kiện StageUpdated
-                for event in stage_filter.get_new_entries():
-                    self.handle_stage_updated(event)
+                from_block = last_processed_block + 1
+                to_block = latest_block
 
-                time.sleep(2) # Nghỉ 2 giây
+                self.stdout.write(f"Đang quét blocks: {from_block} -> {to_block}")
+
+                # === SỬ DỤNG LẠI LOGIC V2 (web3.py tự xử lý topic) ===
+                product_events = supply_chain_contract.events.ProductCreated.get_logs(
+                    from_block=from_block,
+                    to_block=to_block
+                )
+                
+                stage_events = supply_chain_contract.events.StageUpdated.get_logs(
+                    from_block=from_block,
+                    to_block=to_block
+                )
+                # =================================================
+
+                if not product_events and not stage_events:
+                    self.stdout.write("... Không có sự kiện nào trong phạm vi này.")
+                    last_processed_block = to_block
+                    time.sleep(2)
+                    continue
+
+                # 4. Xử lý các sự kiện tìm thấy
+                if product_events:
+                    self.stdout.write(self.style.SUCCESS(f"Tìm thấy {len(product_events)} sự kiện ProductCreated!"))
+                    for event in product_events:
+                        # 👈 THÊM: Try/Except chi tiết cho TỪNG event
+                        try:
+                            self.handle_product_created(event)
+                        except Exception as e:
+                            self.stderr.write(self.style.ERROR(f"Lỗi khi xử lý ProductCreated (ID: {event.args.id}): {e}"))
+                            traceback.print_exc() # In ra lỗi chi tiết
+                
+                if stage_events:
+                    self.stdout.write(self.style.SUCCESS(f"Tìm thấy {len(stage_events)} sự kiện StageUpdated!"))
+                    for event in stage_events:
+                        try:
+                            self.handle_stage_updated(event)
+                        except Exception as e:
+                            self.stderr.write(self.style.ERROR(f"Lỗi khi xử lý StageUpdated (ID: {event.args.id}): {e}"))
+                            traceback.print_exc()
+
+                last_processed_block = to_block
+                time.sleep(2)
+
             except Exception as e:
-                self.stderr.write(f"Lỗi listener: {e}")
-                time.sleep(10) # Chờ 10 giây rồi thử lại
+                self.stderr.write(self.style.ERROR(f"Lỗi vòng lặp chính: {e}"))
+                time.sleep(10)
 
+    # --- Các hàm handler (đã sửa lỗi khớp model) ---
+
+    @transaction.atomic
     def handle_product_created(self, event):
-        args = event.args
-        self.stdout.write(f"🎉 Sự kiện ProductCreated: ID {args.id}")
-
-        # Dùng Django ORM để tạo bản ghi mới trong bảng 'product'
-        # (Giả sử model Product của bạn khớp với sơ đồ)
-        Product.objects.get_or_create(
-            product_id=args.id,
+        args = event['args'] 
+        
+        product, created = Product.objects.get_or_create(
+            product_id=str(args.id), 
             defaults={
                 'name': args.name,
-                'user_id': args.owner # Hoặc bạn cần map address sang user_id
+                'manufacture_date': timezone.now().date(), 
             }
         )
+        if created:
+            self.stdout.write(self.style.SUCCESS(f"   🎉 Đã LƯU vào DB: ID {args.id}"))
+        else:
+            self.stdout.write(self.style.WARNING(f"   🔍 Đã tồn tại trong DB: ID {args.id}"))
 
+    @transaction.atomic
     def handle_stage_updated(self, event):
-        args = event.args
-        self.stdout.write(f"🔔 Sự kiện StageUpdated: ID {args.id}, Stage {args.newStage}")
+        args = event['args']
+        tx_hash_hex = event['transactionHash'].hex() 
 
-        # Dùng Django ORM để tạo bản ghi mới trong bảng 'tracking_event'
-        TrackingEvent.objects.create(
-            product_id=args.id,
-            transaction_id=event.transactionHash.hex(), # Lưu tx_hash
-            note=args.note,
-            stage=args.newStage
-            # ...
+        self.stdout.write(self.style.NOTICE(f"   🔔 Sự kiện StageUpdated: ID {args.id}, Stage {args.newStage}"))
+
+        TrackingEvent.objects.get_or_create(
+            transaction_id=tx_hash_hex,
+            defaults={
+                'product_id': str(args.id),
+                'note': args.note,
+                'stage': args.newStage,
+                'updater_address': args.updater
+            }
         )
-
-        # Đồng thời cập nhật stage mới nhất trong bảng 'product'
-        Product.objects.filter(product_id=args.id).update(stage=args.newStage)
+        self.stdout.write(f"      -> Đã lưu tracking event.")
