@@ -87,8 +87,8 @@ class ProductDetailOnChainView(APIView):
 
 
 class ProductBatchCreateView(APIView):
-    permission_classes = [IsAuthenticated] # Yêu cầu user phải login
-
+    # permission_classes = [IsAuthenticated] # Yêu cầu user phải login
+    permission_classes = [AllowAny]
     def post(self, request):
         # 1. Xác thực vai trò (bạn cần tự implement logic này)
         # if not request.user.role == 'producer':
@@ -112,8 +112,8 @@ class ProductBatchCreateView(APIView):
             })
             
             # 4. Ký và Gửi
-            signed_tx = w3.eth.account.sign_transaction(tx, private_key=backend_account.privateKey)
-            tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            signed_tx = w3.eth.account.sign_transaction(tx, private_key=backend_account.key)
+            tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
             
             # 5. Trả về ngay lập tức (không cần chờ receipt)
             return Response({

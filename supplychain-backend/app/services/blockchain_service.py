@@ -29,8 +29,13 @@ try:
     if not w3.is_connected():
         raise ConnectionError(f"Không thể kết nối tới {settings.BLOCKCHAIN_PROVIDER_URL}")
 
-    # 👈 SỬA: Dùng os.path.join và BASE_DIR để đường dẫn luôn đúng
-    abi_path = os.path.join(settings.BASE_DIR, 'contracts', 'build', 'SupplyChain.json')
+    abi_path = os.path.join(
+        settings.BASE_DIR, 
+        'artifacts', 
+        'contracts', 
+        'SupplyChain.sol', 
+        'SupplyChain.json' # 👈 ĐƯỜNG DẪN CHUẨN CỦA HARDHAT
+    )
 
     with open(abi_path) as f:
         contract_abi = json.load(f)["abi"]

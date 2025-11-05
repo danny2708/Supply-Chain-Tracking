@@ -1,12 +1,15 @@
 # supplychain_backend/urls.py
 from django.contrib import admin
-from django.urls import path, include  # <-- Nhớ import 'include'
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # Thêm các API endpoint của bạn tại đây
-    path('api/v1/', include('products.urls')),    # <--- THÊM DÒNG NÀY
-    path('api/v1/', include('users.urls')),      # (Tương tự cho các app khác)
-    path('api/v1/', include('tracking.urls')),   # (Tương tự cho các app khác)
+    # === SỬA DÒNG NÀY ===
+    # Thêm tiền tố 'products/' vào đây
+    path('api/v1/products/', include('products.urls')), 
+    
+    # Tương tự cho các app khác
+    path('api/v1/users/', include('users.urls')),
+    path('api/v1/tracking/', include('tracking.urls')),
 ]

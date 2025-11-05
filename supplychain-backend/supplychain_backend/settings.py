@@ -9,13 +9,14 @@ env = environ.Env(
     # Định nghĩa kiểu dữ liệu mặc định cho các biến env
     DEBUG=(bool, False),
     CONTRACT_ADDRESS=(str, ""), # Khai báo kiểu string mặc định rỗng
-    BLOCKCHAIN_PROVIDER_URL=(str, "http://localhost:8545") # Khai báo kiểu string
+    BLOCKCHAIN_PROVIDER_URL=(str, "http://localhost:8545"), # Khai báo kiểu string
+    BACKEND_WALLET_PRIVATE_KEY=(str, "")
 )
 # Đọc file .env
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env('SECRET_KEY') # Tốt hơn nên dùng env() cho SECRET_KEY
-
+BACKEND_WALLET_PRIVATE_KEY = env('BACKEND_WALLET_PRIVATE_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
