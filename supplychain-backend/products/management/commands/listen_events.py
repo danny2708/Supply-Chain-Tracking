@@ -1,113 +1,142 @@
-# products/management/commands/listen_events.py
+import os
 import time
-import traceback # 👈 THÊM DÒNG NÀY
+import traceback
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.utils import timezone 
-from app.services.blockchain_service import supply_chain_contract, w3
+from django.utils import timezone
+from web3.exceptions import BlockNotFound
+
+from app.services.blockchain_service import w3, supply_chain_contract
 from products.models import Product
-from tracking.models import TrackingEvent 
+from tracking.models import TrackingEvent
+
+LAST_BLOCK_FILE = ".last_block"
+POLL_INTERVAL = 3  # giây
+RETRY_DELAY = 10   # giây khi lỗi mạng
+
 
 class Command(BaseCommand):
-    help = 'Lắng nghe sự kiện (mẫu Polling V4 - Đáng tin cậy)'
+    help = "Lắng nghe sự kiện on-chain và đồng bộ vào DB"
 
     def handle(self, *args, **options):
-        if not all([supply_chain_contract, w3]):
-            self.stderr.write(self.style.ERROR('Contract/Web3 chưa khởi tạo.'))
+        if not w3 or not supply_chain_contract:
+            self.stdout.write(self.style.ERROR("❌ Web3 hoặc contract chưa khởi tạo"))
             return
 
-        self.stdout.write("🎧 Bắt đầu lắng nghe (mẫu V4)...")
-        last_processed_block = 0 # Bắt đầu quét từ block 0
+        self.stdout.write(self.style.SUCCESS("🚀 Bắt đầu lắng nghe sự kiện SupplyChain..."))
+
+        last_block = self.load_last_block()
+        self.stdout.write(self.style.WARNING(f"📦 Tiếp tục từ block {last_block}"))
 
         while True:
             try:
                 latest_block = w3.eth.block_number
-                if latest_block <= last_processed_block:
-                    time.sleep(2)
+
+                if latest_block <= last_block:
+                    time.sleep(POLL_INTERVAL)
                     continue
 
-                from_block = last_processed_block + 1
+                from_block = last_block + 1
                 to_block = latest_block
+                self.stdout.write(f"🔎 Quét block {from_block} → {to_block}")
 
-                self.stdout.write(f"Đang quét blocks: {from_block} -> {to_block}")
-
-                # === SỬ DỤNG LẠI LOGIC V2 (web3.py tự xử lý topic) ===
-                product_events = supply_chain_contract.events.ProductCreated.get_logs(
-                    from_block=from_block,
-                    to_block=to_block
+                product_logs = supply_chain_contract.events.ProductCreated.get_logs(
+                    from_block=from_block, to_block=to_block
                 )
-                
-                stage_events = supply_chain_contract.events.StageUpdated.get_logs(
-                    from_block=from_block,
-                    to_block=to_block
+                stage_logs = supply_chain_contract.events.StageUpdated.get_logs(
+                    from_block=from_block, to_block=to_block
                 )
-                # =================================================
 
-                if not product_events and not stage_events:
-                    self.stdout.write("... Không có sự kiện nào trong phạm vi này.")
-                    last_processed_block = to_block
-                    time.sleep(2)
-                    continue
+                # --- Handle ProductCreated ---
+                for event in product_logs:
+                    try:
+                        args = event["args"]
+                        product_id = str(args.get("productId") or args.get("id") or "").strip()
+                        name = args.get("name", "").strip()
+                        owner = args.get("creator") or args.get("owner")
 
-                # 4. Xử lý các sự kiện tìm thấy
-                if product_events:
-                    self.stdout.write(self.style.SUCCESS(f"Tìm thấy {len(product_events)} sự kiện ProductCreated!"))
-                    for event in product_events:
-                        # 👈 THÊM: Try/Except chi tiết cho TỪNG event
-                        try:
-                            self.handle_product_created(event)
-                        except Exception as e:
-                            self.stderr.write(self.style.ERROR(f"Lỗi khi xử lý ProductCreated (ID: {event.args.id}): {e}"))
-                            traceback.print_exc() # In ra lỗi chi tiết
-                
-                if stage_events:
-                    self.stdout.write(self.style.SUCCESS(f"Tìm thấy {len(stage_events)} sự kiện StageUpdated!"))
-                    for event in stage_events:
-                        try:
-                            self.handle_stage_updated(event)
-                        except Exception as e:
-                            self.stderr.write(self.style.ERROR(f"Lỗi khi xử lý StageUpdated (ID: {event.args.id}): {e}"))
-                            traceback.print_exc()
+                        if not product_id:
+                            # Tự động tăng ID nếu không có
+                            max_id = Product.objects.aggregate(max_id=models.Max("product_id"))["max_id"] or 0
+                            product_id = str(int(max_id) + 1)
+                            self.stdout.write(self.style.WARNING(f"⚠️ Bỏ qua ID trống, gán tự động: {product_id}"))
 
-                last_processed_block = to_block
-                time.sleep(2)
+                        self.stdout.write(self.style.SUCCESS(
+                            f"🧩 ProductCreated | ID={product_id} | Name={name} | Owner={owner}"
+                        ))
+                        self.sync_product_created(product_id, name)
+                    except Exception as e:
+                        self.stderr.write(self.style.ERROR(f"❌ Lỗi khi xử lý ProductCreated: {e}"))
+                        traceback.print_exc()
 
+                # --- Handle StageUpdated ---
+                for event in stage_logs:
+                    try:
+                        args = event["args"]
+                        product_id = str(args.get("productId") or args.get("id") or "").strip()
+                        new_stage = args.get("newStage")
+                        actor = args.get("actor") or args.get("updater")
+                        note = args.get("note", "")
+
+                        self.stdout.write(self.style.SUCCESS(
+                            f"🔁 StageUpdated | Product={product_id} | NewStage={new_stage} | Actor={actor}"
+                        ))
+                        self.sync_stage_updated(product_id, new_stage, actor, note)
+                    except Exception as e:
+                        self.stderr.write(self.style.ERROR(f"❌ Lỗi khi xử lý StageUpdated: {e}"))
+                        traceback.print_exc()
+
+                # ✅ Lưu checkpoint block
+                last_block = to_block
+                self.save_last_block(last_block)
+                time.sleep(POLL_INTERVAL)
+
+            except BlockNotFound:
+                time.sleep(POLL_INTERVAL)
             except Exception as e:
-                self.stderr.write(self.style.ERROR(f"Lỗi vòng lặp chính: {e}"))
-                time.sleep(10)
+                self.stderr.write(self.style.ERROR(f"❌ Lỗi vòng lặp chính: {e}"))
+                traceback.print_exc()
+                time.sleep(RETRY_DELAY)
 
-    # --- Các hàm handler (đã sửa lỗi khớp model) ---
+    # -------------------------
+    # Helper functions
+    # -------------------------
+
+    def load_last_block(self):
+        if os.path.exists(LAST_BLOCK_FILE):
+            try:
+                with open(LAST_BLOCK_FILE, "r") as f:
+                    return int(f.read().strip())
+            except Exception:
+                return w3.eth.block_number - 1
+        return w3.eth.block_number - 1
+
+    def save_last_block(self, block_num):
+        with open(LAST_BLOCK_FILE, "w") as f:
+            f.write(str(block_num))
 
     @transaction.atomic
-    def handle_product_created(self, event):
-        args = event['args'] 
-        
+    def sync_product_created(self, product_id, name):
+        """Đồng bộ ProductCreated event vào DB"""
         product, created = Product.objects.get_or_create(
-            product_id=str(args.id), 
+            product_id=product_id,
             defaults={
-                'name': args.name,
-                'manufacture_date': timezone.now().date(), 
-            }
+                "name": name or f"Sản phẩm #{product_id}",
+                "manufacture_date": timezone.now().date(),
+            },
         )
         if created:
-            self.stdout.write(self.style.SUCCESS(f"   🎉 Đã LƯU vào DB: ID {args.id}"))
+            self.stdout.write(self.style.SUCCESS(f"✅ Đã thêm sản phẩm mới {product_id}"))
         else:
-            self.stdout.write(self.style.WARNING(f"   🔍 Đã tồn tại trong DB: ID {args.id}"))
+            self.stdout.write(self.style.WARNING(f"ℹ️ Sản phẩm {product_id} đã tồn tại"))
 
     @transaction.atomic
-    def handle_stage_updated(self, event):
-        args = event['args']
-        tx_hash_hex = event['transactionHash'].hex() 
-
-        self.stdout.write(self.style.NOTICE(f"   🔔 Sự kiện StageUpdated: ID {args.id}, Stage {args.newStage}"))
-
-        TrackingEvent.objects.get_or_create(
-            transaction_id=tx_hash_hex,
-            defaults={
-                'product_id': str(args.id),
-                'note': args.note,
-                'stage': args.newStage,
-                'updater_address': args.updater
-            }
+    def sync_stage_updated(self, product_id, new_stage, actor, note=""):
+        """Đồng bộ StageUpdated event"""
+        TrackingEvent.objects.create(
+            product_id=product_id,
+            stage=new_stage,
+            updater_address=actor or "",
+            note=note,
         )
-        self.stdout.write(f"      -> Đã lưu tracking event.")
+        self.stdout.write(self.style.SUCCESS(f"✅ Đã lưu StageUpdated cho sản phẩm {product_id}"))
