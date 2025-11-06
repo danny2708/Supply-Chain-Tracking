@@ -12,8 +12,8 @@ services:
       - pgdata:/var/lib/postgresql/data
   ganache:
     image: trufflesuite/ganache-cli:latest
-    command: ["-h","0.0.0.0","-p","7545","--deterministic"]
+    command: ["-h","0.0.0.0","-p","8545","--deterministic"]
     ports:
-      - "7545:7545"
+      - "8545:8545"
 volumes:
   pgdata:
