@@ -22,7 +22,8 @@ class Product(models.Model):
     # --- TRƯỜNG BỊ THIẾU ---
     # Thêm trường ipfs để khớp CSDL
     ipfs = models.CharField(max_length=255, blank=True, null=True)
-
+    description = models.TextField(blank=True, null=True)
+    on_chain_status = models.CharField(max_length=20, default='pending')
     class Meta:
         db_table = 'product' # Tên bảng THẬT
         managed = False      # CẤM đụng vào

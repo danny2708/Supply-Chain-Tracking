@@ -18,7 +18,8 @@ class ProductSerializer(serializers.ModelSerializer):
         # Thêm 'ipfs' và 'username' (trường ảo)
         fields = [
             'product_id', 
-            'name', 
+            'name',
+            'description', 
             'manufacture_date', 
             'expiry_date', 
             'user',  # Đây là ID của producer (chỉ để GHI)
@@ -28,7 +29,9 @@ class ProductSerializer(serializers.ModelSerializer):
         
         # 'user' sẽ được tự động gán, không cần user nhập vào
         extra_kwargs = {
-            'user': {'read_only': True}
+            'user': {'read_only': True},
+            'on_chain_status': {'read_only':True},
+            'description':{'required': False, 'allow_blank':True,'allow_null':True}
         }
 
     # --- LOGIC TẠO SẢN PHẨM MỚI ---
@@ -43,6 +46,10 @@ class ProductSerializer(serializers.ModelSerializer):
 
         # 3. Tự động gán producer này vào sản phẩm
         validated_data['user'] = user
+        validated_data['on_chain_status'] = 'pending'
+
+        product = super().create(validated_data)
+
         
-        # 4. Tạo sản phẩm
-        return super().create(validated_data)
+        print(f"\n--- [RUNSERVER]: Đã thêm {product.product_id} vào hàng đợi (pending) ---")
+        return product

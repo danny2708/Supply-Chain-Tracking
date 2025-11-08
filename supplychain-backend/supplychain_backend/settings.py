@@ -1,7 +1,19 @@
 # supplychain_backend/settings.py
+import os
+from dotenv import load_dotenv
+from pathlib import Path
+
+# --- THÊM LOGIC TẢI .ENV ---
+# (BASE_DIR phải được định nghĩa ở trên cùng)
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Tải file .env từ thư mục gốc (nơi có manage.py)
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+# ------------------------------
+
 SECRET_KEY = 'maomaoisgoodcat3'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-AUTH_USER_MODEL = 'users.Account'  # Trỏ đến app 'users' và model 'Account'
+AUTH_USER_MODEL = 'users.Account'
 DEBUG = True
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 INSTALLED_APPS = [
@@ -16,21 +28,22 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt',
+    
     # Các app của bạn
     'core',
     'users',
-    'products',  # <--- THÊM VÀO ĐÂY
+    'products',
     'tracking',
     'certificates',
     'ipfs',
+    'app', # <-- (Giả sử 'app' là tên app chứa 'blockchain_service.py')
 ]
-# supplychain_backend/settings.py
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [],
-        'APP_DIRS': True, # Rất quan trọng: cho phép Django tìm template trong các app
+        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -43,30 +56,26 @@ TEMPLATES = [
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # Thêm dòng này (E410) - PHẢI đứng TRƯỚC AuthenticationMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware', 
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    # Thêm dòng này (E408)
     'django.contrib.auth.middleware.AuthenticationMiddleware', 
-    # Thêm dòng này (E409)
     'django.contrib.messages.middleware.MessageMiddleware', 
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-# (Đảm bảo bạn cũng đã cấu hình DATABASES để trỏ đến PostgreSQL)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'supply_chain_tracking',
         'USER': 'postgres',
         'PASSWORD': '0comatkhau',
-        'HOST': 'localhost', # Hoặc địa chỉ server DB
+        'HOST': 'localhost',
         'PORT': '5432',
     }
 }
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Địa chỉ của frontend (ví dụ Next.js)
+    "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
 STATIC_URL = '/static/'
@@ -75,17 +84,20 @@ ROOT_URLCONF = 'supplychain_backend.urls'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        # BÁO CHO DJANGO: "Hãy sử dụng JWT để kiểm tra user!"
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
 SIMPLE_JWT = {
-    # BÁO CHO THƯ VIỆN BIẾT:
-    # Trường khóa chính trên Model 'Account' của chúng ta
-    # tên là 'user_id'
     'USER_ID_FIELD': 'user_id',
-    
-    # Tên của trường (claim) mà chúng ta muốn
-    # lưu trong payload của token
     'USER_ID_CLAIM': 'user_id',
 }
+# (Dấu '}' bị lạc của bạn đã được sửa)
+
+# ---- THÊM CÁC DÒNG NÀY VÀO CUỐI ----
+# Đọc các biến từ .env (đã được load) và gán vào Settings
+BACKEND_WALLET_PRIVATE_KEY = os.getenv('BACKEND_WALLET_PRIVATE_KEY')
+CONTRACT_ADDRESS = os.getenv('CONTRACT_ADDRESS')
+
+# Tệp blockchain_service.py của bạn tìm 'BLOCKCHAIN_PROVIDER_URL',
+# vì vậy chúng ta gán nó từ 'INFURA_URL' của .env
+BLOCKCHAIN_PROVIDER_URL = os.getenv('INFURA_URL')
