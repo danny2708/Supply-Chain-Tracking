@@ -3,11 +3,9 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.hashers import make_password
 
-# 1. Chúng ta PHẢI tạo một "Manager" tùy chỉnh
-# Nó định nghĩa cách hàm "create_user" (dùng cho API)
-# và "create_superuser" (dùng cho terminal) hoạt động
+# --- AccountManager (Đã chính xác) ---
 class AccountManager(BaseUserManager):
-    def create_user(self, username, password, name, role='producer'):
+    def create_user(self, username, password, name, role='producer', **extra_fields):
         if not username:
             raise ValueError('User phải có username')
         
@@ -15,67 +13,94 @@ class AccountManager(BaseUserManager):
             username=username,
             name=name,
             role=role,
+            **extra_fields
         )
-        # Tự động băm mật khẩu
         user.password = make_password(password) 
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, username, password, name, role='producer'):
-        # Lệnh 'python manage.py createsuperuser' sẽ gọi hàm này
+    def create_superuser(self, username, password, name, role='producer', **extra_fields):
         user = self.create_user(
             username=username,
             password=password,
             name=name,
             role=role,
+            **extra_fields
         )
-        # Bảng 'account' của bạn không có cột 'is_admin' hay 'is_staff'
-        # nên chúng ta không gán các giá trị đó
         user.save(using=self._db)
         return user
 
-# 2. Sửa Model để kế thừa từ 'AbstractBaseUser'
+# --- Account Model (Đã sửa lỗi trùng lặp) ---
 class Account(AbstractBaseUser):
-    # Khớp 100% với SQL của bạn
     user_id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=50, unique=True)
-    # Cột 'password' đã được kế thừa từ AbstractBaseUser
     role = models.CharField(max_length=20)
-    name = models.CharField(max_length=50)
-
-    # Cột 'last_login' cũng được kế thừa (bắt buộc)
-    # THÊM DÒNG NÀY ĐỂ KHỚP VỚI CỘT BẠN VỪA TẠO
+    name = models.CharField(max_length=100) # (Sửa thành 100 để khớp CSDL)
     last_login = models.DateTimeField(blank=True, null=True)
-
-    # Chỉ định Manager tùy chỉnh
+    ipfs = models.CharField(max_length=255, blank=True, null=True)
+    
     objects = AccountManager()
 
-    # Chỉ định trường nào dùng để Login
     USERNAME_FIELD = 'username'
-    
-    # Chỉ định các trường BẮT BUỘC khi tạo user
-    # (Đây chính là thuộc tính bị thiếu gây ra lỗi)
     REQUIRED_FIELDS = ['name', 'role'] 
 
     class Meta:
-        managed = False      # Cấm Django đụng vào
-        db_table = 'account' # Trỏ vào bảng nguyên bản
+        managed = False
+        db_table = 'account'
 
     def __str__(self):
         return self.username
+    
+    @property
+    def is_active(self):
+        "Tài khoản có được kích hoạt không?"
+        return True
+
+    @property
+    def is_staff(self):
+        "User có phải là staff không (để vào trang Admin)?"
+        return self.role == 'producer'
+
+    @property
+    def is_superuser(self):
+        "User có phải là superuser không?"
+        return self.role == 'producer'
     
     # ----- Các hàm bắt buộc cho AbstractBaseUser -----
     
     def has_perm(self, perm, obj=None):
         "User có quyền cụ thể không?"
-        return True # Tạm thời cho phép tất cả
+        return self.is_superuser
 
     def has_module_perms(self, app_label):
         "User có quyền xem app không?"
-        return True # Tạm thời cho phép tất cả
-        
-    @property
-    def is_staff(self):
-        "User có phải là staff không (để vào trang Admin)?"
-        # Giả sử ai có role 'producer' là staff (bạn có thể đổi)
-        return self.role == 'producer'
+        return self.is_superuser
+    
+    # (ĐÃ XÓA HÀM 'is_staff' BỊ TRÙNG LẶP Ở ĐÂY)
+    
+# --- Model Transporter (Đã sửa db_table) ---
+class Transporter(models.Model):
+    transporter = models.OneToOneField(
+        Account,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        db_column='transporter_id'
+    )
+    
+    class Meta:
+        managed = False
+        db_table = 'transporter' # <-- SỬA LỖI Ở ĐÂY
+
+# --- Model Retailer (Không đổi) ---
+class Retailer(models.Model):
+    retailer = models.OneToOneField(
+        Account,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        db_column='retailer_id'
+    )
+    location = models.TextField(blank=True, null=True, unique=True)
+
+    class Meta:
+        managed = False
+        db_table = 'retailer'

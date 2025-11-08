@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     # Thư viện bên thứ ba
     'rest_framework',
     'corsheaders',
+    'rest_framework_simplejwt',
     # Các app của bạn
     'core',
     'users',
@@ -70,3 +71,21 @@ CORS_ALLOWED_ORIGINS = [
 ]
 STATIC_URL = '/static/'
 ROOT_URLCONF = 'supplychain_backend.urls'
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        # BÁO CHO DJANGO: "Hãy sử dụng JWT để kiểm tra user!"
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+SIMPLE_JWT = {
+    # BÁO CHO THƯ VIỆN BIẾT:
+    # Trường khóa chính trên Model 'Account' của chúng ta
+    # tên là 'user_id'
+    'USER_ID_FIELD': 'user_id',
+    
+    # Tên của trường (claim) mà chúng ta muốn
+    # lưu trong payload của token
+    'USER_ID_CLAIM': 'user_id',
+}
