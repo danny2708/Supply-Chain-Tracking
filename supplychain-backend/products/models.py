@@ -1,6 +1,6 @@
 # products/models.py
 from django.db import models
-from django.conf import settings
+from django.conf import settings # Dùng settings.AUTH_USER_MODEL là tốt nhất
 
 class Product(models.Model):
     # Khớp chính xác với cột 'product_id varchar(100) PRIMARY KEY'
@@ -11,16 +11,27 @@ class Product(models.Model):
     expiry_date = models.DateField(null=True, blank=True)
     
     # Khớp với 'user_id int references account(user_id)'
+    # Đây chính là producer
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         db_column="user_id" # Chỉ định tên cột THẬT
     )
-
+    
+    # --- TRƯỜNG BỊ THIẾU ---
+    # Thêm trường ipfs để khớp CSDL
+    ipfs = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    on_chain_status = models.CharField(max_length=20, default='pending')
     class Meta:
         db_table = 'product' # Tên bảng THẬT
         managed = False      # CẤM đụng vào 
     
+<<<<<<< HEAD
+=======
+    # --- SỬA LỖI TYPO ---
+    # Sửa 'G' thành 'self'
+>>>>>>> origin/mao_backend_workplaces
     def __str__(self):
         return f"{self.name} ({self.product_id})"

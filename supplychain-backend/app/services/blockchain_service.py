@@ -76,4 +76,8 @@ if w3 and backend_account:
         supply_chain_contract = None
     except Exception as e:
         print(f"❌ Lỗi khi khởi tạo contract: {e}")
+<<<<<<< HEAD
         supply_chain_contract = None
+=======
+        supply_chain_contract = None
+>>>>>>> origin/mao_backend_workplaces
