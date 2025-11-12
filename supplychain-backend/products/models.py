@@ -28,10 +28,7 @@ class Product(models.Model):
         db_table = 'product' # Tên bảng THẬT
         managed = False      # CẤM đụng vào 
     
-<<<<<<< HEAD
-=======
     # --- SỬA LỖI TYPO ---
     # Sửa 'G' thành 'self'
->>>>>>> origin/mao_backend_workplaces
     def __str__(self):
         return f"{self.name} ({self.product_id})"

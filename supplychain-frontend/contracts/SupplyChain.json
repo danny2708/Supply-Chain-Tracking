@@ -2,271 +2,177 @@
   "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
   "abi": [
     {
-      "inputs": [],
-      "stateMutability": "nonpayable",
-      "type": "constructor"
-    },
-    {
+      "type": "event",
       "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "to",
-          "type": "address"
-        }
-      ],
       "name": "OwnershipTransferred",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
       "inputs": [
         {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
+          "type": "string",
+          "name": "productId",
+          "indexed": true
         },
         {
-          "indexed": false,
-          "internalType": "string",
-          "name": "name",
-          "type": "string"
+          "type": "address",
+          "name": "from",
+          "indexed": true
         },
         {
-          "indexed": false,
-          "internalType": "address",
-          "name": "owner",
-          "type": "address"
+          "type": "address",
+          "name": "to",
+          "indexed": true
         }
-      ],
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
       "name": "ProductCreated",
-      "type": "event"
+      "inputs": [
+        {
+          "type": "string",
+          "name": "productId",
+          "indexed": true
+        },
+        {
+          "type": "string",
+          "name": "name",
+          "indexed": false
+        },
+        {
+          "type": "string",
+          "name": "ipfsHash",
+          "indexed": false
+        },
+        {
+          "type": "address",
+          "name": "owner",
+          "indexed": true
+        }
+      ]
     },
     {
+      "type": "event",
       "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "enum SupplyChain.StageType",
-          "name": "newStage",
-          "type": "uint8"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "updater",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "note",
-          "type": "string"
-        }
-      ],
       "name": "StageUpdated",
-      "type": "event"
-    },
-    {
-      "inputs": [],
-      "name": "admin",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
-          "internalType": "string",
-          "name": "_name",
-          "type": "string"
+          "type": "string",
+          "name": "productId",
+          "indexed": true
         },
         {
-          "internalType": "string",
-          "name": "_description",
-          "type": "string"
+          "type": "uint8",
+          "name": "newStage",
+          "indexed": false
+        },
+        {
+          "type": "address",
+          "name": "updater",
+          "indexed": true
         }
-      ],
+      ]
+    },
+    {
+      "type": "function",
       "name": "createProduct",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
+      "constant": false,
+      "payable": false,
       "inputs": [
         {
-          "internalType": "string[]",
-          "name": "_names",
-          "type": "string[]"
+          "type": "string",
+          "name": "_productId"
         },
         {
-          "internalType": "string[]",
-          "name": "_descriptions",
-          "type": "string[]"
+          "type": "string",
+          "name": "_name"
+        },
+        {
+          "type": "string",
+          "name": "_description"
+        },
+        {
+          "type": "string",
+          "name": "_ipfsHash"
         }
       ],
-      "name": "createProductBatch",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "outputs": []
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_id",
-          "type": "uint256"
-        }
-      ],
-      "name": "getProduct",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        },
-        {
-          "internalType": "string",
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "description",
-          "type": "string"
-        },
-        {
-          "internalType": "address",
-          "name": "owner",
-          "type": "address"
-        },
-        {
-          "internalType": "enum SupplyChain.StageType",
-          "name": "stage",
-          "type": "uint8"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "nextProductId",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
+      "type": "function",
       "name": "products",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": ""
+        }
+      ],
       "outputs": [
         {
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
+          "type": "string",
+          "name": "productId"
         },
         {
-          "internalType": "string",
-          "name": "name",
-          "type": "string"
+          "type": "string",
+          "name": "name"
         },
         {
-          "internalType": "string",
-          "name": "description",
-          "type": "string"
+          "type": "string",
+          "name": "description"
         },
         {
-          "internalType": "address",
-          "name": "owner",
-          "type": "address"
+          "type": "string",
+          "name": "ipfsHash"
         },
         {
-          "internalType": "enum SupplyChain.StageType",
-          "name": "stage",
-          "type": "uint8"
+          "type": "address",
+          "name": "owner"
+        },
+        {
+          "type": "uint8",
+          "name": "stage"
         }
-      ],
-      "stateMutability": "view",
-      "type": "function"
+      ]
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_id",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "_newOwner",
-          "type": "address"
-        }
-      ],
+      "type": "function",
       "name": "transferOwnership",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
+      "constant": false,
+      "payable": false,
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "_id",
-          "type": "uint256"
+          "type": "string",
+          "name": "_id"
         },
         {
-          "internalType": "enum SupplyChain.StageType",
-          "name": "_stage",
-          "type": "uint8"
-        },
-        {
-          "internalType": "string",
-          "name": "_note",
-          "type": "string"
+          "type": "address",
+          "name": "_newOwner"
         }
       ],
+      "outputs": []
+    },
+    {
+      "type": "function",
       "name": "updateStage",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": "_id"
+        },
+        {
+          "type": "uint8",
+          "name": "_stage"
+        },
+        {
+          "type": "string",
+          "name": "_note"
+        }
+      ],
+      "outputs": []
     }
   ]
 }

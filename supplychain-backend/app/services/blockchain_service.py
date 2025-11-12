@@ -5,6 +5,9 @@ from web3 import Web3
 from django.conf import settings
 from web3.exceptions import InvalidAddress
 
+from dotenv import load_dotenv
+load_dotenv(os.path.join(settings.BASE_DIR, '.env'), override=True)
+
 # ======= Biến toàn cục =======
 w3 = None
 backend_account = None
@@ -76,8 +79,4 @@ if w3 and backend_account:
         supply_chain_contract = None
     except Exception as e:
         print(f"❌ Lỗi khi khởi tạo contract: {e}")
-<<<<<<< HEAD
         supply_chain_contract = None
-=======
-        supply_chain_contract = None
->>>>>>> origin/mao_backend_workplaces
