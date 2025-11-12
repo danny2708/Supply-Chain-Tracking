@@ -1,8 +1,7 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useRef } from "react"
+import React, { useEffect, useState } from "react"
+import { Html5QrcodeScanner } from "html5-qrcode" // Thư viện bạn đã import
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -68,107 +67,72 @@ export default function TrackPage() {
   const [searched, setSearched] = useState(false)
   const [notFound, setNotFound] = useState(false)
   const [showQRScanner, setShowQRScanner] = useState(false)
-  const [cameraError, setCameraError] = useState("")
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
+  const [scanResult, setScanResult] = useState<string | null>(null) // State để lưu kết quả quét
 
-  const startQRScanner = async () => {
-    setCameraError("")
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      })
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        videoRef.current.play()
+  // **SỬA LỖI 1: Logic useEffect cho QR Scanner**
+  useEffect(() => {
+    // Chỉ chạy khi showQRScanner là true
+    if (!showQRScanner) {
+      return
+    }
+
+    // Đây là ID của div mà scanner sẽ được render vào
+    const scannerElementId = "reader"
+
+    const scanner = new Html5QrcodeScanner(
+      scannerElementId,
+      {
+        qrbox: {
+          width: 250,
+          height: 250,
+        },
+        fps: 5,
+      },
+      false // Tắt verbose
+    )
+
+    function success(result: string) {
+      // Dọn dẹp scanner
+      scanner.clear()
+      // Lưu kết quả quét và ẩn scanner
+      setScanResult(result)
+      setShowQRScanner(false)
+    }
+
+    function error(err: any) {
+      console.warn(err)
+    }
+
+    // Bắt đầu render scanner
+    scanner.render(success, error)
+
+    // Hàm dọn dẹp: Rất QUAN TRỌNG
+    // Sẽ chạy khi component unmount hoặc khi showQRScanner thay đổi
+    return () => {
+      // Đảm bảo scanner đã dừng và camera đã tắt
+      // Thêm check getRunningTrackCameraCapabilities để tránh lỗi
+      if (scanner && scanner.getState() === 2) { // 2 = SCANNING
+        scanner.clear().catch((err) => {
+          console.error("Lỗi khi dọn dẹp scanner:", err)
+        })
       }
-      setShowQRScanner(true)
-      // Start scanning
-      scanQRCode()
-    } catch (error) {
-      setCameraError("Unable to access camera. Please check permissions.")
     }
-  }
+  }, [showQRScanner]) // Chỉ chạy lại khi showQRScanner thay đổi
 
-  const stopQRScanner = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop())
-      streamRef.current = null
+  // **SỬA LỖI 2: Tự động tìm kiếm khi có kết quả quét**
+  useEffect(() => {
+    if (scanResult) {
+      setProductId(scanResult) // Cập nhật input field
+      handleSearch(null, scanResult) // Tự động tìm kiếm
     }
-    setShowQRScanner(false)
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanResult])
 
-  const scanQRCode = () => {
-    if (!videoRef.current || !canvasRef.current) return
-
-    const canvas = canvasRef.current
-    const video = videoRef.current
-    const context = canvas.getContext("2d")
-
-    if (!context) return
-
-    const scan = () => {
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        context.drawImage(video, 0, 0, canvas.width, canvas.height)
-
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height)
-        const data = imageData.data
-
-        // Simple QR code detection - look for patterns
-        // In production, use a proper QR code library like jsQR or qr-scanner
-        // For demo, we'll simulate QR code detection
-        const qrPattern = detectQRPattern(data)
-        if (qrPattern) {
-          setProductId(qrPattern)
-          handleSearch(new Event("submit") as any, qrPattern)
-          stopQRScanner()
-          return
-        }
-      }
-
-      requestAnimationFrame(scan)
-    }
-
-    scan()
-  }
-
-  const detectQRPattern = (data: Uint8ClampedArray): string | null => {
-    // Simplified QR detection - in production use jsQR library
-    // This is a placeholder that simulates QR detection
-    // Real implementation would use: https://github.com/cozmo/jsQR
-    return null
-  }
-
-  // Fallback: Manual QR input via camera capture
-  const captureQRImage = () => {
-    if (!videoRef.current || !canvasRef.current) return
-
-    const canvas = canvasRef.current
-    const video = videoRef.current
-    const context = canvas.getContext("2d")
-
-    if (!context) return
-
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    context.drawImage(video, 0, 0, canvas.width, canvas.height)
-
-    // For demo, we'll extract text from a simple pattern
-    // In production, use jsQR or similar library
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height)
-
-    // Simulate QR code detection by looking for specific patterns
-    // This is a simplified version - real QR detection is more complex
-    alert("QR code captured. In production, this would decode the QR code using jsQR library.")
-  }
-
-  const handleSearch = (e: React.FormEvent | any, qrProductId?: string) => {
-    e.preventDefault()
+  const handleSearch = (e: React.FormEvent | null, qrProductId?: string) => {
+    if (e) e.preventDefault()
     const searchId = qrProductId || productId
+    if (!searchId) return // Không tìm nếu ID rỗng
+
     setSearched(true)
     setNotFound(false)
 
@@ -181,6 +145,7 @@ export default function TrackPage() {
     }
   }
 
+  // Các hàm helper
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Delivered":
@@ -253,7 +218,8 @@ export default function TrackPage() {
 
                 <div className="flex gap-2">
                   <Button
-                    onClick={startQRScanner}
+                    // **SỬA LỖI 3: Sửa onClick**
+                    onClick={() => setShowQRScanner(true)} // Chỉ cần set state là true
                     variant="outline"
                     className="flex-1 gap-2 bg-transparent border-slate-600 text-slate-300 hover:text-white"
                   >
@@ -261,40 +227,24 @@ export default function TrackPage() {
                     Scan QR Code
                   </Button>
                 </div>
-
                 <p className="text-xs text-slate-400">Try: PROD001, PROD002, or PROD003</p>
               </div>
             ) : (
+              // **SỬA LỖI 4: Đơn giản hóa JSX cho scanner**
               <div className="space-y-4">
-                {cameraError && (
-                  <Alert className="bg-red-900/20 border-red-700">
-                    <AlertDescription className="text-red-400">{cameraError}</AlertDescription>
-                  </Alert>
-                )}
+                {/* Thư viện sẽ tự động tạo UI bên trong div này.
+                  Chúng ta không cần <video> hay <canvas> nữa.
+                */}
+                <div id="reader" className="w-full"></div>
 
-                <div className="relative bg-black rounded-lg overflow-hidden">
-                  <video ref={videoRef} className="w-full h-64 object-cover" playsInline muted />
-                  <canvas ref={canvasRef} className="hidden" />
-
-                  {/* QR Scanner Frame */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-48 h-48 border-2 border-blue-500 rounded-lg"></div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button onClick={captureQRImage} className="flex-1 bg-green-600 hover:bg-green-700">
-                    Capture & Decode
-                  </Button>
-                  <Button onClick={stopQRScanner} variant="destructive" className="flex-1">
-                    <X className="w-4 h-4 mr-2" />
-                    Close Scanner
-                  </Button>
-                </div>
-
-                <p className="text-xs text-slate-400 text-center">
-                  Position QR code within the frame. For demo, use manual Product ID entry.
-                </p>
+                <Button
+                  onClick={() => setShowQRScanner(false)} // Chỉ cần set state là false
+                  variant="destructive"
+                  className="w-full"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Close Scanner
+                </Button>
               </div>
             )}
           </CardContent>
@@ -309,7 +259,7 @@ export default function TrackPage() {
           </Alert>
         )}
 
-        {/* Product Information */}
+        {/* Product Information (Không thay đổi) */}
         {product && (
           <div className="space-y-6">
             {/* Product Details */}
@@ -422,7 +372,7 @@ export default function TrackPage() {
           </div>
         )}
 
-        {/* Empty State */}
+        {/* Empty State (Không thay đổi) */}
         {!product && !notFound && searched && (
           <Card className="bg-slate-800 border-slate-700 text-center py-12">
             <Package className="w-12 h-12 text-slate-600 mx-auto mb-4" />
