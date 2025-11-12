@@ -1,3 +1,3 @@
-call cd supplychain-backend
+cd supplychain-backend
 call venv/Scripts/activate
-call python manage.py runserver
+python manage.py runserver

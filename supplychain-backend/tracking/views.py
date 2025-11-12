@@ -1,20 +1,23 @@
 # tracking/views.py
 from rest_framework import viewsets
-from .models import TrackingEvent, Transporter, Retailer
-from .serializers import (
-    TrackingEventSerializer, 
-    TransporterSerializer, 
-    RetailerSerializer
-)
+# Import model và serializer MỚI
+from .models import Event, TrackingEvent
+from .serializers import EventSerializer, TrackingEventSerializer
 
+# --- ViewSet MỚI cho Event ---
+class EventViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint cho phép tạo, xem, sửa, xóa các Events.
+    """
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer
+
+# --- ViewSet SỬA ĐỔI cho TrackingEvent ---
 class TrackingEventViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint cho phép gán Transporter/Retailer cho một Event.
+    """
     queryset = TrackingEvent.objects.all()
     serializer_class = TrackingEventSerializer
 
-class TransporterViewSet(viewsets.ModelViewSet):
-    queryset = Transporter.objects.all()
-    serializer_class = TransporterSerializer
-
-class RetailerViewSet(viewsets.ModelViewSet):
-    queryset = Retailer.objects.all()
-    serializer_class = RetailerSerializer
+# (Đã XÓA TransporterViewSet và RetailerViewSet khỏi đây)

@@ -1,3 +1,4 @@
+// supplychain-backend/src/controllers/product.controller.js
 const { getProductById, createProductService, addStageService } = require('../services/product.service');
 
 exports.getProduct = async (req, res) => {

@@ -1,7 +1,8 @@
+// supplychain-backend/src/services/blockchain.service.js
 const { ethers } = require('ethers');
 require('dotenv').config();
 
-const provider = new ethers.JsonRpcProvider(process.env.GANACHE_URL || 'http://127.0.0.1:7545');
+const provider = new ethers.JsonRpcProvider(process.env.GANACHE_URL || 'http://127.0.0.1:8545');
 
 async function verifyTx(txHash, contractAddress, abi, eventName){
   const receipt = await provider.getTransactionReceipt(txHash);

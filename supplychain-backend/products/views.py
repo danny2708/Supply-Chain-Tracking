@@ -1,83 +1,82 @@
 # products/views.py
-
-from rest_framework import viewsets
-from rest_framework.views import APIView
+from rest_framework import viewsets, permissions, status
+from rest_framework.views import APIView       # <-- Import thêm
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny # Cho phép ai cũng có thể quét QR
-
 from .models import Product
 from .serializers import ProductSerializer
 
-# Import service kết nối blockchain bạn đã tạo (ở bước 1)
+# Import service kết nối blockchain
 try:
-    from app.services.blockchain_service import supply_chain_contract
+    from app.services.blockchain_service import w3, backend_account, supply_chain_contract
 except ImportError:
     supply_chain_contract = None
+    w3 = None
+    backend_account = None
 
-# ---
-# API ĐỌC TỪ DATABASE (Do listener đồng bộ về)
-# ---
+# --- API ĐỌC TỪ DATABASE (Đã đồng bộ) ---
 class ProductViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint cho phép xem (GET) và tạo (POST) Products.
-    ViewSet này làm việc với database PostgreSQL của bạn,
-    vốn được đồng bộ hóa bởi 'listen_events'.
-    """
     queryset = Product.objects.all().order_by('product_id')
     serializer_class = ProductSerializer
-    # Bạn có thể thêm permission classes ở đây, ví dụ: IsAdminUser
     
+    # --- THÊM BẢO VỆ ---
+    # Yêu cầu user phải đăng nhập
+    permission_classes = [permissions.IsAuthenticated]
 
-# ---
-# API ĐỌC TRỰC TIẾP TỪ BLOCKCHAIN (Cho QR Scan)
-# ---
-class ProductDetailOnChainView(APIView):
-    """
-    API endpoint CHUYÊN DỤNG cho việc quét QR code.
-    Nó đọc dữ liệu trực tiếp từ Smart Contract (on-chain)
-    để đảm bảo tính minh bạch cao nhất.
-    """
-    # permission_classes = [AllowAny] # Mở cho bất kỳ ai quét mã QR
+    # --- LOGIC QUAN TRỌNG ---
+    # Gửi thông tin 'request' (chứa user) vào context của Serializer
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
     
-    def get(self, request, product_id):
-        """
-        Trả về thông tin chi tiết của một sản phẩm từ blockchain.
-        """
-        if not supply_chain_contract:
-            return Response({"error": "Dịch vụ blockchain không sẵn sàng"}, status=503)
+class RetryProductOnChainView(APIView):
+    """
+    API endpoint tùy chỉnh để 'gửi lại' (retry) một sản phẩm
+    đã bị 'failed' on-chain.
+    """
+    permission_classes = [permissions.IsAuthenticated]
 
+    def post(self, request, product_id, format=None):
+        # 1. Kiểm tra quyền
+        if request.user.role != 'producer':
+            return Response(
+                {"error": "Chỉ producer mới có quyền retry."}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         try:
-            # 1. Gọi hàm .call() (miễn phí, không phải transaction)
-            #    Hàm getProduct(id) trong contract của bạn
-            product_data = supply_chain_contract.functions.getProduct(product_id).call()
-
-            # 2. Map data từ tuple (contract trả về) sang JSON
-            #    Thứ tự trả về: (id, name, description, owner, stage_enum)
-            stage_map = {
-                0: "Created", 
-                1: "Manufactured", 
-                2: "Shipped", 
-                3: "Delivered"
-            }
-
-            response_data = {
-                "id": product_data[0],
-                "name": product_data[1],
-                "description": product_data[2],
-                "owner_address": product_data[3], # Địa chỉ ví của chủ sở hữu
-                "stage_id": product_data[4],      # Số (0, 1, 2, 3)
-                "stage_name": stage_map.get(product_data[4], "Unknown") # Tên
-            }
+            # 2. Tìm sản phẩm
+            product = Product.objects.get(product_id=product_id)
             
-            # 3. (Tùy chọn) Lấy lịch sử (tracking_event) từ DB
-            #    và đính kèm vào đây để có response đầy đủ nhất.
-            #    Ví dụ:
-            #    history = TrackingEvent.objects.filter(product_id=product_id)
-            #    history_serializer = TrackingEventSerializer(history, many=True)
-            #    response_data["history"] = history_serializer.data
+            # 3. (Bảo mật) Kiểm tra xem có phải user sở hữu không
+            if product.user != request.user:
+                return Response(
+                    {"error": "Bạn không sở hữu sản phẩm này."}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
-            return Response(response_data)
+            # 4. Chỉ retry nếu nó thực sự 'failed'
+            if product.on_chain_status == 'failed':
+                
+                # 5. ĐẶT LẠI TRẠNG THÁI (Đây là logic UPDATE)
+                product.on_chain_status = 'pending'
+                product.save()
+                
+                print(f"\n--- [RUNSERVER]: Đã nhận yêu cầu RETRY cho {product.product_id} ---")
+                
+                return Response(
+                    {"detail": f"Đã gửi lại {product_id} vào hàng đợi on-chain."},
+                    status=status.HTTP_202_ACCEPTED # 202: Đã chấp nhận (chờ xử lý)
+                )
+            else:
+                # Nếu nó là 'pending' hoặc 'completed'
+                return Response(
+                    {"error": f"Sản phẩm đang ở trạng thái '{product.on_chain_status}', không thể retry."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        except Exception as e:
-            # Lỗi này thường xảy ra nếu product_id không tồn tại trên contract
-            return Response({"error": "Sản phẩm không tìm thấy trên blockchain.", "details": str(e)}, status=404)
+        except Product.DoesNotExist:
+            return Response(
+                {"error": "Không tìm thấy sản phẩm này."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )

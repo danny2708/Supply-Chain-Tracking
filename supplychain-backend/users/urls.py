@@ -1,10 +1,22 @@
-# users/urls.py (TỆP MỚI)
+# users/urls.py
 from django.urls import path
-from . import views
+from .views import UserRegistrationView
+
+# Import các view của thư viện simplejwt
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 urlpatterns = [
-    # Tạo một địa chỉ cụ thể cho việc đăng ký
-    path('auth/register/', views.UserRegistrationView.as_view(), name='register'),
+    # Endpoint đăng ký (đã hoạt động)
+    path('register/', UserRegistrationView.as_view(), name='register'),
     
-    # (Sau này bạn sẽ thêm 'auth/login/' vào đây)
+    # Endpoint Đăng nhập MỚI
+    # Khi POST 'username' và 'password' vào đây...
+    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    # ...nó sẽ trả về một 'access' token và 'refresh' token.
+    
+    # Endpoint làm mới token (tùy chọn)
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
