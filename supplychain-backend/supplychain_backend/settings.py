@@ -108,3 +108,14 @@ SIMPLE_JWT = {
 BACKEND_WALLET_PRIVATE_KEY = os.getenv('BACKEND_WALLET_PRIVATE_KEY')
 CONTRACT_ADDRESS = os.getenv('CONTRACT_ADDRESS')
 BLOCKCHAIN_PROVIDER_URL = os.getenv('INFURA_URL')
+
+# === CẤU HÌNH PINATA / IPFS ===
+PINATA_API_KEY = os.getenv('PINATA_API_KEY') 
+PINATA_API_SECRET = os.getenv('PINATA_API_SECRET') 
+PINATA_JWT = os.getenv('PINATA_JWT') 
+
+# Endpoint mặc định của Pinata
+PINATA_BASE_URL = "https://api.pinata.cloud"
+PINATA_PIN_FILE_URL = f"{PINATA_BASE_URL}/pinning/pinFileToIPFS"
+PINATA_PIN_JSON_URL = f"{PINATA_BASE_URL}/pinning/pinJSONToIPFS"
+PINATA_GATEWAY_URL = "https://gateway.pinata.cloud/ipfs/"

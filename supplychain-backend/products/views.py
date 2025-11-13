@@ -4,6 +4,7 @@ from rest_framework.views import APIView       # <-- Import thêm
 from rest_framework.response import Response
 from .models import Product
 from .serializers import ProductSerializer
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 
 # Import service kết nối blockchain
 try:
@@ -21,6 +22,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     # --- THÊM BẢO VỆ ---
     # Yêu cầu user phải đăng nhập
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     # --- LOGIC QUAN TRỌNG ---
     # Gửi thông tin 'request' (chứa user) vào context của Serializer
