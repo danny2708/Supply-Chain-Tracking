@@ -7,6 +7,10 @@ from .models import Product
 from .serializers import ProductSerializer
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 
+
+# 1. Import các class quyền mới
+from core.permissions import IsManager, IsProducer, IsOwner
+
 # 2. IMPORT CÁC MODEL VÀ SERIALIZER TỪ 'tracking' ĐỂ SỬ DỤNG
 try:
     from tracking.models import Event, TrackingEvent
@@ -33,20 +37,36 @@ class ProductViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context.update({"request": self.request})
         return context
-    
-    # ---- 3. LOGIC LỌC THEO PRODUCER (Yêu cầu của bạn) ----
+    # ---- 2. LOGIC PHÂN QUYỀN MỚI ----
+    def get_permissions(self):
+        """
+        Gán quyền dựa trên hành động (action).
+        """
+        if self.action == 'create':
+            # Chỉ Producer được TẠO
+            self.permission_classes = [IsProducer]
+        
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            # Manager được sửa/xóa TẤT CẢ
+            # Producer CHỈ được sửa/xóa CỦA MÌNH
+            self.permission_classes = [ IsManager | (IsProducer & IsOwner) ]
+        
+        else:
+            # list, retrieve, history (GET)
+            # Mọi người (đã đăng nhập) đều được XEM
+            self.permission_classes = [permissions.IsAuthenticated]
+        
+        return super().get_permissions()
+    # ---- 3. LOGIC LỌC (FILTER) MỚI ----
     def get_queryset(self):
         """
-        Ghi đè hàm này để lọc sản phẩm:
-        - Manager: Có thể lọc theo 'producer_id' hoặc xem tất cả.
-        - Producer: Chỉ thấy sản phẩm của mình.
-        - Retailer/Transporter: Thấy tất cả.
+        Manager có thể lọc theo producer_id.
+        Các vai trò khác xem tất cả (theo yêu cầu của bạn).
         """
         user = self.request.user
-        queryset = Product.objects.all() # Bắt đầu với tất cả sản phẩm
+        queryset = Product.objects.all()
 
-        # 1. XỬ LÝ YÊU CẦU CỦA MANAGER (Lọc theo producer_id)
-        # (Xử lý ?producer_id=... trên URL)
+        # Xử lý yêu cầu: ?producer_id=...
         producer_id_query = self.request.query_params.get('producer_id', None)
         
         if producer_id_query is not None:
@@ -54,16 +74,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             if user.role == 'manager':
                 return queryset.filter(user_id=producer_id_query).order_by('product_id')
             else:
-                # Nếu user (không phải manager) cố gắng lọc,
-                # trả về danh sách rỗng (bảo mật)
+                # Các vai trò khác nếu cố lọc sẽ thấy danh sách rỗng
                 return queryset.none()
-
-        # 2. XỬ LÝ CHO PRODUCER (Bảo mật mặc định)
-        if user.role == 'producer':
-            return queryset.filter(user=user).order_by('product_id')
         
-        # 3. MANAGER, RETAILER, TRANSPORTER (Thấy tất cả)
-        # (Nếu không có bộ lọc 'producer_id' và không phải Producer)
+        # Mọi vai trò (bao gồm Producer) đều thấy tất cả nếu không lọc
         return queryset.order_by('product_id')
 
     # ---- 4. API TRUY VẤN LỊCH SỬ SẢN PHẨM (Yêu cầu của bạn) ----
