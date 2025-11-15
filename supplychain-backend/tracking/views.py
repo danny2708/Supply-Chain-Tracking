@@ -1,5 +1,5 @@
 # tracking/views.py
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions # <-- 1. IMPORT PERMISSIONS
 # Import model và serializer MỚI
 from .models import Event, TrackingEvent
 from .serializers import EventSerializer, TrackingEventSerializer
@@ -11,6 +11,7 @@ class EventViewSet(viewsets.ModelViewSet):
     """
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+    permission_classes = [permissions.IsAuthenticated] # <-- 2. THÊM BẢO VỆ
 
 # --- ViewSet SỬA ĐỔI cho TrackingEvent ---
 class TrackingEventViewSet(viewsets.ModelViewSet):
@@ -19,5 +20,4 @@ class TrackingEventViewSet(viewsets.ModelViewSet):
     """
     queryset = TrackingEvent.objects.all()
     serializer_class = TrackingEventSerializer
-
-# (Đã XÓA TransporterViewSet và RetailerViewSet khỏi đây)
+    permission_classes = [permissions.IsAuthenticated] # <-- 3. THÊM BẢO VỆ

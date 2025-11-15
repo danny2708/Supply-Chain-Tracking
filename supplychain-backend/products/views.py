@@ -1,10 +1,18 @@
 # products/views.py
 from rest_framework import viewsets, permissions, status
-from rest_framework.views import APIView       # <-- Import thêm
+from rest_framework.decorators import action       # <-- 1. IMPORT 'action'
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Product
 from .serializers import ProductSerializer
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
+
+# 2. IMPORT CÁC MODEL VÀ SERIALIZER TỪ 'tracking' ĐỂ SỬ DỤNG
+try:
+    from tracking.models import Event, TrackingEvent
+    from tracking.serializers import TrackingEventSerializer
+except ImportError:
+    pass # Xử lý nếu app 'tracking' không tồn tại
 
 # Import service kết nối blockchain
 try:
@@ -18,19 +26,73 @@ except ImportError:
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all().order_by('product_id')
     serializer_class = ProductSerializer
-    
-    # --- THÊM BẢO VỆ ---
-    # Yêu cầu user phải đăng nhập
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
-    # --- LOGIC QUAN TRỌNG ---
-    # Gửi thông tin 'request' (chứa user) vào context của Serializer
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context.update({"request": self.request})
         return context
     
+    # ---- 3. LOGIC LỌC THEO PRODUCER (Yêu cầu của bạn) ----
+    def get_queryset(self):
+        """
+        Ghi đè hàm này để lọc sản phẩm:
+        - Manager: Có thể lọc theo 'producer_id' hoặc xem tất cả.
+        - Producer: Chỉ thấy sản phẩm của mình.
+        - Retailer/Transporter: Thấy tất cả.
+        """
+        user = self.request.user
+        queryset = Product.objects.all() # Bắt đầu với tất cả sản phẩm
+
+        # 1. XỬ LÝ YÊU CẦU CỦA MANAGER (Lọc theo producer_id)
+        # (Xử lý ?producer_id=... trên URL)
+        producer_id_query = self.request.query_params.get('producer_id', None)
+        
+        if producer_id_query is not None:
+            # Chỉ Manager mới được dùng bộ lọc này
+            if user.role == 'manager':
+                return queryset.filter(user_id=producer_id_query).order_by('product_id')
+            else:
+                # Nếu user (không phải manager) cố gắng lọc,
+                # trả về danh sách rỗng (bảo mật)
+                return queryset.none()
+
+        # 2. XỬ LÝ CHO PRODUCER (Bảo mật mặc định)
+        if user.role == 'producer':
+            return queryset.filter(user=user).order_by('product_id')
+        
+        # 3. MANAGER, RETAILER, TRANSPORTER (Thấy tất cả)
+        # (Nếu không có bộ lọc 'producer_id' và không phải Producer)
+        return queryset.order_by('product_id')
+
+    # ---- 4. API TRUY VẤN LỊCH SỬ SẢN PHẨM (Yêu cầu của bạn) ----
+    # API này sẽ tạo ra URL: GET /api/v1/products/{product_id}/history/
+    @action(detail=True, methods=['get'])
+    def history(self, request, pk=None):
+        """
+        Trả về tất cả các tracking event (lịch sử)
+        liên quan đến một sản phẩm cụ thể.
+        """
+        try:
+            product = self.get_object() # (pk chính là product_id)
+            
+            # 1. Tìm tất cả 'Events' (giao dịch) cho sản phẩm này
+            events = Event.objects.filter(product_id=product.product_id)
+            
+            # 2. Tìm tất cả 'TrackingEvents' (ai đã tham gia)
+            tracking_events = TrackingEvent.objects.filter(transaction__in=events)
+            
+            # 3. Trả về dữ liệu
+            # (Chúng ta dùng 'TrackingEventSerializer' để hiển thị tên)
+            serializer = TrackingEventSerializer(tracking_events, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            ) 
 class RetryProductOnChainView(APIView):
     """
     API endpoint tùy chỉnh để 'gửi lại' (retry) một sản phẩm

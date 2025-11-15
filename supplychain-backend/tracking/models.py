@@ -12,7 +12,7 @@ class Event(models.Model):
     transaction_id = models.AutoField(primary_key=True)
     product_id = models.ForeignKey(
         Product,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         null=True,
         db_column='product_id' # Khớp tên cột SQL
     )

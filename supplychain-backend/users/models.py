@@ -59,12 +59,12 @@ class Account(AbstractBaseUser):
     @property
     def is_staff(self):
         "User có phải là staff không (để vào trang Admin)?"
-        return self.role == 'producer'
+        return self.role == 'producer' or self.role == 'manager'
 
     @property
     def is_superuser(self):
         "User có phải là superuser không?"
-        return self.role == 'producer'
+        return self.role == 'manager'
     
     # ----- Các hàm bắt buộc cho AbstractBaseUser -----
     
@@ -74,7 +74,7 @@ class Account(AbstractBaseUser):
 
     def has_module_perms(self, app_label):
         "User có quyền xem app không?"
-        return self.is_superuser
+        return self.is_superuser or self.is_staff
     
     # (ĐÃ XÓA HÀM 'is_staff' BỊ TRÙNG LẶP Ở ĐÂY)
     

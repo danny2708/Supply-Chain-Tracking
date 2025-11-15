@@ -14,7 +14,7 @@ class Product(models.Model):
     # Đây chính là producer
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         null=True,
         db_column="user_id" # Chỉ định tên cột THẬT
     )
