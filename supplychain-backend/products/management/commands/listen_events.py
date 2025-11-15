@@ -9,10 +9,7 @@ from django.utils import timezone
 from web3.exceptions import BlockNotFound
 
 # (Import các model và service của bạn)
-try:
-    from app.services.blockchain_service import w3, supply_chain_contract
-except ImportError:
-    from core.services.blockchain_service import w3, supply_chain_contract
+from app.services.blockchain_service import w3, supply_chain_contract
 
 # Import CÁC MODEL MỚI (CSDL 6 bảng)
 from products.models import Product

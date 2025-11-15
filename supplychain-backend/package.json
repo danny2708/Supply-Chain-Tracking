@@ -7,6 +7,7 @@
     "compile": "npx hardhat compile",
     "deploy": "node scripts/deploy_and_sync.js",
     "deploy:hardhat": "npx hardhat run scripts/deploy.js --network localhost",
+    "deploy:testnet": "npx hardhat run scripts/deploy.js --network sepolia && node scripts/deploy_and_sync.js",
     "start": "node src/index.js"
   },
   "dependencies": {
@@ -15,7 +16,7 @@
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
-    "ethers": "^6.11.0",
+    "ethers": "^6.15.0",
     "express": "^4.18.2"
   },
   "devDependencies": {

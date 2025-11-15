@@ -26,7 +26,7 @@ class Product(models.Model):
     on_chain_status = models.CharField(max_length=20, default='pending')
     class Meta:
         db_table = 'product' # Tên bảng THẬT
-        managed = False      # CẤM đụng vào
+        managed = False      # CẤM đụng vào 
     
     # --- SỬA LỖI TYPO ---
     # Sửa 'G' thành 'self'

@@ -4,17 +4,25 @@ from rest_framework.views import APIView       # <-- Import thêm
 from rest_framework.response import Response
 from .models import Product
 from .serializers import ProductSerializer
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 
+# Import service kết nối blockchain
+try:
+    from app.services.blockchain_service import w3, backend_account, supply_chain_contract
+except ImportError:
+    supply_chain_contract = None
+    w3 = None
+    backend_account = None
+
+# --- API ĐỌC TỪ DATABASE (Đã đồng bộ) ---
 class ProductViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint cho phép xem (GET) và tạo (POST) Products.
-    """
     queryset = Product.objects.all().order_by('product_id')
     serializer_class = ProductSerializer
     
     # --- THÊM BẢO VỆ ---
     # Yêu cầu user phải đăng nhập
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     # --- LOGIC QUAN TRỌNG ---
     # Gửi thông tin 'request' (chứa user) vào context của Serializer

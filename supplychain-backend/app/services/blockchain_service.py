@@ -5,6 +5,9 @@ from web3 import Web3
 from django.conf import settings
 from web3.exceptions import InvalidAddress
 
+from dotenv import load_dotenv
+load_dotenv(os.path.join(settings.BASE_DIR, '.env'), override=True)
+
 # ======= Biến toàn cục =======
 w3 = None
 backend_account = None

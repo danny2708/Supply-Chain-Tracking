@@ -15,3 +15,11 @@ node_modules
 
 # Hardhat Ignition default folder for deployments against a local node
 ignition/deployments/chain-31337
+
+#be cache
+products/__pycache__
+ipfs/__pycache__/*.pyc
+scripts/__pycache__/*.pyc
+tests/__pycache__/*.pyc
+utils/__pycache__/*.pyc
+__pycache__/
