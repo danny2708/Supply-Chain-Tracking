@@ -10,7 +10,7 @@ from users.models import Transporter, Retailer
 class Event(models.Model):
     # Khớp 100% với CSDL
     transaction_id = models.AutoField(primary_key=True)
-    product = models.ForeignKey(
+    product_id = models.ForeignKey(
         Product,
         on_delete=models.SET_NULL,
         null=True,
