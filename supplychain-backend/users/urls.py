@@ -1,22 +1,25 @@
 # users/urls.py
-from django.urls import path
-from .views import UserRegistrationView
-
-# Import các view của thư viện simplejwt
+from django.urls import path, include # <-- 1. Import 'include'
+# 2. Import các ViewSet mới
+from .views import UserRegistrationView, TransporterViewSet, RetailerViewSet
+from rest_framework.routers import DefaultRouter # <-- 3. Import Router
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
 
+# 4. Tạo router
+router = DefaultRouter()
+router.register(r'transporters', TransporterViewSet, basename='transporter')
+router.register(r'retailers', RetailerViewSet, basename='retailer')
+
 urlpatterns = [
-    # Endpoint đăng ký (đã hoạt động)
+    # 5. Thêm các URL của router
+    # (Nó sẽ tạo: /api/v1/users/transporters/ và .../retailers/)
+    path('', include(router.urls)),
+    
+    # 6. Giữ các URL đăng ký/đăng nhập cũ của bạn
     path('register/', UserRegistrationView.as_view(), name='register'),
-    
-    # Endpoint Đăng nhập MỚI
-    # Khi POST 'username' và 'password' vào đây...
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    # ...nó sẽ trả về một 'access' token và 'refresh' token.
-    
-    # Endpoint làm mới token (tùy chọn)
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

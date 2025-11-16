@@ -1,53 +1,44 @@
 # tracking/serializers.py
 from rest_framework import serializers, exceptions
 from .models import Event, TrackingEvent
-# (Chúng ta không cần import Product ở đây cho EventSerializer nữa)
+# (Import Product và Account để lấy tên)
+from products.models import Product
+from users.models import Account
 
+# --- EventSerializer (Đã sửa lỗi TypeError) ---
 class EventSerializer(serializers.ModelSerializer):
     
-    # ---- 1. SỬA LỖI `TypeError` ----
-    # (Xóa 'product_id = ...' và 'product = ...' thủ công)
-    # Vì tên key trong JSON ('product_id') đã khớp với tên 
-    # trường trong Model ('product_id'), ModelSerializer sẽ tự động xử lý.
-
     class Meta:
         model = Event
         fields = [
             'transaction_id', 
-            'product_id', # <-- Chỉ cần dùng tên trường thật của model
+            'product_id', # (Khớp với tên trường trong model 'Event')
             'order_status', 
             'assign_date', 
             'received_date'
         ]
-        read_only_fields = ('transaction_id',) # ID là tự tăng
+        read_only_fields = ('transaction_id',)
         
-        # 'product_id' là bắt buộc khi tạo
-        # Các trường khác là read_only (khi tạo) và sẽ được xử lý bởi update()
+        # Logic phân quyền (từ Model 58)
         extra_kwargs = {
+            'product_id': {'write_only': True},
             'order_status': {'read_only': True},
             'assign_date': {'read_only': True},
             'received_date': {'read_only': True},
         }
 
     def create(self, validated_data):
-        # Yêu cầu của bạn: "tạo event mới(mặc định order_status và received_date là pending và null)"
-        # 'pending' và 'null' đã là giá trị DEFAULT trong CSDL của bạn,
-        # vì vậy chúng ta không cần làm gì thêm.
-        
-        # (Nếu bạn muốn 'assign_date' là ngày hôm nay khi tạo, hãy thêm dòng này)
-        # from django.utils import timezone
-        # validated_data['assign_date'] = timezone.now().date() 
-        
+        # (Logic tạo 'Event' của Retailer)
+        # Yêu cầu của bạn: mặc định 'pending' và 'null'
+        # CSDL đã tự động làm điều này, nên chúng ta không cần code
         return super().create(validated_data)
 
-    # ---- 2. SỬA LỖI LOGIC UPDATE ----
     def update(self, instance, validated_data):
+        # (Logic phân quyền UPDATE của Transporter/Retailer/Manager)
         user = self.context['request'].user
-        # Dùng 'self.initial_data' (JSON thô) để kiểm tra các trường read_only
-        data = self.initial_data 
+        data = self.initial_data # Đọc từ JSON thô
 
         if user.role == 'manager':
-            # Manager được sửa mọi thứ
             instance.order_status = data.get('order_status', instance.order_status)
             instance.assign_date = data.get('assign_date', instance.assign_date)
             instance.received_date = data.get('received_date', instance.received_date)
@@ -59,7 +50,6 @@ class EventSerializer(serializers.ModelSerializer):
             if 'assign_date' in data:
                 instance.assign_date = data.get('assign_date')
             
-            # Kiểm tra nếu họ cố sửa trường bị cấm
             if 'received_date' in data:
                 raise exceptions.PermissionDenied("Transporter không có quyền cập nhật received_date.")
 
@@ -68,7 +58,6 @@ class EventSerializer(serializers.ModelSerializer):
             if 'received_date' in data:
                 instance.received_date = data.get('received_date')
             
-            # Kiểm tra nếu họ cố sửa trường bị cấm
             if 'order_status' in data or 'assign_date' in data:
                 raise exceptions.PermissionDenied("Retailer không có quyền cập nhật order_status hoặc assign_date.")
 
@@ -78,19 +67,43 @@ class EventSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-
-# --- Serializer MỚI cho TrackingEvent (Giữ nguyên) ---
+# --- TrackingEventSerializer (Đã cập nhật theo yêu cầu) ---
 class TrackingEventSerializer(serializers.ModelSerializer):
     
+    # === Lấy các trường từ Bảng 6 (TrackingEvent) ===
     transporter_name = serializers.CharField(source='transporter.transporter.name', read_only=True, allow_null=True)
     retailer_name = serializers.CharField(source='retailer.retailer.name', read_only=True, allow_null=True)
+
+    # === Lấy các trường từ Bảng 5 (Event) (thông qua 'transaction') ===
+    transaction_id = serializers.IntegerField(source='transaction.transaction_id', read_only=True)
+    product_id = serializers.CharField(source='transaction.product_id.product_id', read_only=True) # (product_id_id -> product_id)
+    product_name = serializers.CharField(source='transaction.product_id.name', read_only=True)
+    order_status = serializers.CharField(source='transaction.order_status', read_only=True)
+    assign_date = serializers.DateField(source='transaction.assign_date', read_only=True)
+    received_date = serializers.DateField(source='transaction.received_date', read_only=True)
     
     class Meta:
         model = TrackingEvent
+        # Liệt kê tất cả các trường BẠN YÊU CẦU (chỉ đọc)
         fields = [
-            'transaction',
-            'transporter', 
+            'transaction_id',
+            'product_id',
+            'product_name',
+            'order_status',
+            'assign_date',
+            'received_date',
             'transporter_name',
-            'retailer', 
-            'retailer_name'
+            'retailer_name',
+            
+            # Các trường 'ID' (dùng để GHI/POST)
+            'transaction', # (PK/FK đến Event)
+            'transporter', # (FK đến Transporter Profile)
+            'retailer',    # (FK đến Retailer Profile)
         ]
+        
+        # Ẩn các trường 'ID' thô khi GHI
+        extra_kwargs = {
+            'transaction': {'write_only': True},
+            'transporter': {'write_only': True, 'allow_null': True},
+            'retailer': {'write_only': True, 'allow_null': True},
+        }
