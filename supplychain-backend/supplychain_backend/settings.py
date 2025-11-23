@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -102,6 +103,8 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'USER_ID_FIELD': 'user_id',
     'USER_ID_CLAIM': 'user_id',
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
 # === BIẾN MÔI TRƯỜNG CHO BLOCKCHAIN / WALLET ===
