@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -102,12 +103,14 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'USER_ID_FIELD': 'user_id',
     'USER_ID_CLAIM': 'user_id',
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
 # === BIẾN MÔI TRƯỜNG CHO BLOCKCHAIN / WALLET ===
 BACKEND_WALLET_PRIVATE_KEY = os.getenv('BACKEND_WALLET_PRIVATE_KEY')
 CONTRACT_ADDRESS = os.getenv('CONTRACT_ADDRESS')
-BLOCKCHAIN_PROVIDER_URL = os.getenv('INFURA_URL')
+BLOCKCHAIN_PROVIDER_URL = os.getenv('BLOCKCHAIN_PROVIDER_URL')
 
 # === CẤU HÌNH PINATA / IPFS ===
 PINATA_API_KEY = os.getenv('PINATA_API_KEY') 
