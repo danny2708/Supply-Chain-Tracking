@@ -115,7 +115,7 @@ def build_excel_from_products_list(products_list: List[Dict]) -> bytes:
     headers = [
         "product_id", "name", "description", 
         "manufacture_date", "expiry_date", "ipfs", 
-        "user", "username", "on_chain_status",
+        "user", "username",
     ]
     ws.append(headers)
 
@@ -140,7 +140,6 @@ def build_excel_from_products_list(products_list: List[Dict]) -> bytes:
             p.get("ipfs", ""),
             p.get("user", ""),
             p.get("username", ""),
-            p.get("on_chain_status", ""),
         ]
         ws.append(row)
 
