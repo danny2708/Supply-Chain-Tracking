@@ -33,7 +33,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
+    lookup_field = 'product_id'
 
+    def perform_create(self, serializer):
+        # Gán user hiện tại vào sản phẩm khi tạo mới
+        serializer.save(user=self.request.user)
+    # ---- 1. TRUYỀN 'request' VÀO SERIALIZER CONTEXT ----
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context.update({"request": self.request})
@@ -43,7 +48,11 @@ class ProductViewSet(viewsets.ModelViewSet):
         """
         Gán quyền dựa trên hành động (action).
         """
-        if self.action == 'create':
+        if self.action in ['retrieve', 'history']:
+            self.permission_classes = [permissions.AllowAny]
+
+
+        elif self.action == 'create':
             # Chỉ Producer được TẠO
             self.permission_classes = [IsProducer]
         
@@ -53,7 +62,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             self.permission_classes = [ IsManager | (IsProducer & IsOwner) ]
         
         else:
-            # list, retrieve, history (GET)
+            # list (GET)
             # Mọi người (đã đăng nhập) đều được XEM
             self.permission_classes = [permissions.IsAuthenticated]
         
@@ -108,7 +117,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                 {"error": str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             ) 
-
+        
     @action(detail=False, methods=["post"], url_path="import_excel", url_name="import-excel")
     def import_excel(self, request):
         """
@@ -192,7 +201,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                 {"error": "Lỗi khi tạo file Excel", "detail": str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
+            
 class RetryProductOnChainView(APIView):
     """
     API endpoint tùy chỉnh để 'gửi lại' (retry) một sản phẩm
@@ -244,3 +253,4 @@ class RetryProductOnChainView(APIView):
                 {"error": "Không tìm thấy sản phẩm này."}, 
                 status=status.HTTP_404_NOT_FOUND
             )
+        

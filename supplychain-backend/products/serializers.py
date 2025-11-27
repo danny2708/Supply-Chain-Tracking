@@ -8,6 +8,7 @@ DEFAULT_IPFS_GATEWAY = getattr(settings, "IPFS_GATEWAY_URL", "https://gateway.pi
 class ProductSerializer(serializers.ModelSerializer):
     # Hiển thị tên của producer, không chỉ ID
     username = serializers.CharField(source='user.name', read_only=True)
+    user_id = serializers.ReadOnlyField(source='user.id')
 
     # Cho phép client gửi CID hoặc URL (không bắt buộc)
     ipfs = serializers.CharField(required=False, allow_blank=True, allow_null=True)
@@ -22,7 +23,8 @@ class ProductSerializer(serializers.ModelSerializer):
             'expiry_date',
             'user',      # Ghi: ID
             'username',  # Đọc: tên producer
-            'ipfs'
+            'ipfs',
+            'user_id',
         ]
         extra_kwargs = {
             'user': {'read_only': True},

@@ -33,7 +33,7 @@ class EventViewSet(viewsets.ModelViewSet):
         else:
             # list, retrieve (GET)
             # Mọi người (đã đăng nhập) đều được XEM
-            self.permission_classes = [permissions.IsAuthenticated]
+            self.permission_classes = [permissions.AllowAny]
         
         return super().get_permissions()
 

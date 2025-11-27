@@ -12,7 +12,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 # === CẤU HÌNH CHÍNH ===
 SECRET_KEY = os.getenv('SECRET_KEY', 'thằng nào sửa cái này là gay')  
 
-DEBUG = True
+# DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
