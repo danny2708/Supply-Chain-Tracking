@@ -56,22 +56,21 @@ class Command(BaseCommand):
                     f"--- [WORKER]: Đang xử lý on-chain cho {product.product_id}..."
                 ))
                 
-                # (Logic tạo IPFS nên ở đây)
-                ipfs_hash = product.ipfs or f"temp_hash_{product.product_id}"
-                
-                # Tên hàm `createProduct` này dựa trên file `product.controller.js`
-                # và `listen_events.py` của bạn
+                # Worker: khi gửi transaction, không gửi CID/ipfs để tiết kiệm gas.
+                # Chúng ta vẫn giữ CID trong DB để FE hiển thị, nhưng on-chain sẽ chứa empty string.
+                ipfs_payload_for_chain = "" 
                 tx = supply_chain_contract.functions.createProduct(
                     product.product_id,
-                    product.name, # Contract của bạn (trong file .js) có vẻ cần 'name'
+                    product.name,
                     description,
-                    ipfs_hash
+                    ipfs_payload_for_chain
                 ).build_transaction({
                     'from': backend_account.address,
                     'nonce': w3.eth.get_transaction_count(backend_account.address),
-                    'gas': 2000000, # Ước lượng gas
+                    'gas': 2000000,
                 })
 
+                # Ký và gửi giao dịch
                 signed_tx = w3.eth.account.sign_transaction(tx, private_key=backend_account.key)
                 tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
                 

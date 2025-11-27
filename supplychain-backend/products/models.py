@@ -14,7 +14,7 @@ class Product(models.Model):
     # Đây chính là producer
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         null=True,
         db_column="user_id" # Chỉ định tên cột THẬT
     )
@@ -29,6 +29,5 @@ class Product(models.Model):
         managed = False      # CẤM đụng vào 
     
     # --- SỬA LỖI TYPO ---
-    # Sửa 'G' thành 'self'
     def __str__(self):
         return f"{self.name} ({self.product_id})"

@@ -77,7 +77,6 @@ async function main() {
   // Update backend .env
   const backendEnvPath = path.resolve(__dirname, "../.env");
   await setEnvVar(backendEnvPath, "CONTRACT_ADDRESS", address);
-  await setEnvVar(backendEnvPath, "NEXT_PUBLIC_CONTRACT_ADDRESS", address);
   await setEnvVar(backendEnvPath, "NETWORK", networkName);
   await setEnvVar(backendEnvPath, "BLOCKCHAIN_PROVIDER_URL", rpcUrl);
 

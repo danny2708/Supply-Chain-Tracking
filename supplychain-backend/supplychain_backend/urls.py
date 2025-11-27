@@ -17,4 +17,5 @@ urlpatterns = [
     
     # --- ĐĂNG KÝ TẤT CẢ API V1 DƯỚI MỘT TIỀN TỐ DUY NHẤT ---
     path('api/v1/', include(api_v1_patterns)),
+    path("api/pinata/", include("ipfs.urls")), 
 ]

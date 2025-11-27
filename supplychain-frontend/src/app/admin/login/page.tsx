@@ -29,19 +29,71 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    // Simple authentication - in production, this would call an API
-    if (username === "admin" && password === "123456") {
-      // Store session in localStorage
-      localStorage.setItem(
-        "adminSession",
-        JSON.stringify({
-          username,
-          loginTime: new Date().toISOString(),
-        })
+    try {
+      // 1. Gửi request đăng nhập
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/v1/users/login/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        }
       );
-      router.push("/");
-    } else {
-      setError("Invalid username or password");
+
+      const data = await response.json();
+
+      // Xử lý lỗi đăng nhập
+      if (!response.ok) {
+        setError(data.detail || "Invalid username or password");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Đăng nhập thành công -> Lưu Token
+      localStorage.setItem("accessToken", data.access);
+      localStorage.setItem("refreshToken", data.refresh);
+      localStorage.setItem("username", username);
+
+      // Mục đích: Lấy User ID và Role để lưu vào localStorage cho trang Admin dùng
+      try {
+        // a. Giải mã Token để lấy User ID (Token JWT có dạng header.payload.signature)
+        // Payload nằm ở phần giữa (index 1), được mã hóa base64
+        const payload = JSON.parse(atob(data.access.split(".")[1]));
+        const userId = payload.user_id;
+
+        if (userId) {
+          localStorage.setItem("user_id", userId);
+
+          // b. Gọi API lấy thông tin chi tiết User để lấy Role
+          const userRes = await fetch(
+            `http://127.0.0.1:8000/api/v1/users/accounts/${userId}/`,
+            {
+              headers: {
+                Authorization: `Bearer ${data.access}`,
+              },
+            }
+          );
+
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            // c. Lưu Role (chuyển về chữ thường để dễ so sánh)
+            if (userData.role) {
+              localStorage.setItem("role", userData.role.toLowerCase());
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi khi lấy thông tin user role:", err);
+        // Không chặn login nếu lỗi bước này, nhưng Admin Page có thể bị thiếu quyền
+      }
+
+      // 3. Chuyển hướng về trang Admin Panel
+      router.push("/admin");
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Login failed. Please check your connection and try again.");
     }
 
     setLoading(false);
