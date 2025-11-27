@@ -7,7 +7,26 @@ from users.models import Account
 
 # --- EventSerializer (Đã sửa lỗi TypeError) ---
 class EventSerializer(serializers.ModelSerializer):
+    transporter_name = serializers.CharField(
+        source='trackingevent.transporter.transporter.name', 
+        read_only=True, 
+        allow_null=True
+    )
     
+    # Logic: Event -> (transaction_id) -> TrackingEvent -> Retailer -> Account -> Name
+    retailer_name = serializers.CharField(
+        source='trackingevent.retailer.retailer.name', 
+        read_only=True,
+        allow_null=True
+    )
+
+    # Logic: Event -> (transaction_id) -> TrackingEvent -> Retailer -> Location
+    retailer_location = serializers.CharField(
+        source='trackingevent.retailer.location', 
+        read_only=True, 
+        allow_null=True
+    )
+
     class Meta:
         model = Event
         fields = [
@@ -15,7 +34,10 @@ class EventSerializer(serializers.ModelSerializer):
             'product_id', # (Khớp với tên trường trong model 'Event')
             'order_status', 
             'assign_date', 
-            'received_date'
+            'received_date',
+            'transporter_name',
+            'retailer_name',
+            'retailer_location'
         ]
         read_only_fields = ('transaction_id',)
         

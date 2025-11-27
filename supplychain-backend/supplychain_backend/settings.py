@@ -12,7 +12,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 # === CẤU HÌNH CHÍNH ===
 SECRET_KEY = os.getenv('SECRET_KEY', 'thằng nào sửa cái này là gay')  
 
-DEBUG = True
+# DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
@@ -110,7 +110,7 @@ SIMPLE_JWT = {
 # === BIẾN MÔI TRƯỜNG CHO BLOCKCHAIN / WALLET ===
 BACKEND_WALLET_PRIVATE_KEY = os.getenv('BACKEND_WALLET_PRIVATE_KEY')
 CONTRACT_ADDRESS = os.getenv('CONTRACT_ADDRESS')
-BLOCKCHAIN_PROVIDER_URL = os.getenv('INFURA_URL')
+BLOCKCHAIN_PROVIDER_URL = os.getenv('BLOCKCHAIN_PROVIDER_URL')
 
 # === CẤU HÌNH PINATA / IPFS ===
 PINATA_API_KEY = os.getenv('PINATA_API_KEY') 
