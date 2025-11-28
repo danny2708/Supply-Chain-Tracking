@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -95,8 +94,17 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
+      // Lấy URL từ biến môi trường
+      // Lưu ý: process.env.NEXT_PUBLIC_API_URL sẽ lấy giá trị từ file .env
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      // Kiểm tra xem biến môi trường có tồn tại không để tránh lỗi undefined
+      if (!apiUrl) {
+        throw new Error("API URL is not defined in environment variables");
+      }
+
       const response = await fetch(
-        "http://127.0.0.1:8000/api/v1/users/register/",
+        `${apiUrl}/users/register/`, // Sử dụng Template Literal để nối chuỗi
         {
           method: "POST",
           headers: {
@@ -106,7 +114,7 @@ export default function SignupPage() {
             username: username,
             password: password,
             name: name,
-            role: selectedRole, // Gửi role đã chọn (producer, retailer, transporter)
+            role: selectedRole,
           }),
         }
       );
@@ -114,17 +122,20 @@ export default function SignupPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        // Hiển thị lỗi từ Backend (ví dụ: Username đã tồn tại)
         setError(data.detail || "Registration failed. Please try again.");
         setLoading(false);
         return;
       }
 
-      // Đăng ký thành công -> Chuyển hướng về trang Login để lấy Token
       router.push("/admin/login");
     } catch (err) {
       console.error("Signup error:", err);
-      setError("Failed to connect to the server.");
+      // Hiển thị thông báo lỗi rõ ràng hơn nếu thiếu env
+      if (err instanceof Error && err.message.includes("API URL")) {
+         setError("System Configuration Error: Missing API URL.");
+      } else {
+         setError("Failed to connect to the server.");
+      }
     } finally {
       setLoading(false);
     }

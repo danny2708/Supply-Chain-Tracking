@@ -1,131 +1,164 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-/**
- * @title SupplyChain Contract
- * @dev Lưu trữ và theo dõi sản phẩm bằng cách sử dụng 'productId' (string)
- * làm khóa chính, khớp với CSDL off-chain.
- */
 contract SupplyChain {
 
-    // Định nghĩa các giai đoạn của chuỗi cung ứng
     enum StageType { Created, Manufactured, Shipped, Delivered }
 
-    // Cấu trúc (struct) dữ liệu của một sản phẩm
     struct Product {
-        string productId; // Khóa chính (string), ví dụ: "rau_sach_1"
+        string productId;      
         string name;
         string description;
-        string ipfsHash;    // Tùy chọn: hash của dữ liệu chi tiết trên IPFS
-        address owner;       // Địa chỉ của người sở hữu (ban đầu là server)
+        string ipfsHash;
+        string manufactureDate; // Mới
+        string expiryDate;      // Mới
+        address owner;
         StageType stage;
-        string[] history;   // Mảng lưu lịch sử (cho hàm updateStage)
+        string[] history;      
     }
 
-    // Ánh xạ (Mapping) từ string productId (khóa chính) đến Product struct
     mapping(string => Product) public products;
 
-    // --- Định nghĩa các Sự kiện (Events) ---
-
+    // -----------------------------
+    // EVENTS (HYBRID STRATEGY)
+    // -----------------------------
     event ProductCreated(
-        string indexed productId, // ID (string) để dễ dàng lọc
+        // 1. INDEX: Dùng Hash để RPC lọc nhanh (Machine readable)
+        bytes32 indexed productIdHash, 
+        
+        // 2. DATA: Dùng String để hiển thị rõ trên Etherscan (Human readable)
+        string productId,
         string name,
-        string ipfsHash,
-        address indexed owner      // Địa chỉ của server đã tạo ra nó
+        string manufactureDate,
+        string expiryDate,
+        
+        address indexed owner
     );
 
     event StageUpdated(
-        string indexed productId, // ID (string)
+        bytes32 indexed productIdHash,
+        string productId, // Hiển thị ID rõ ràng khi update
         StageType newStage,
         address indexed updater
     );
 
     event OwnershipTransferred(
-        string indexed productId, // ID (string)
+        bytes32 indexed productIdHash,
+        string productId,
         address indexed from,
         address indexed to
     );
 
-    // --- Các Ràng buộc (Modifiers) ---
-
-    /**
-     * @dev Yêu cầu người gọi hàm phải là chủ sở hữu của sản phẩm
-     */
     modifier onlyOwner(string memory _id) {
         require(products[_id].owner == msg.sender, "Not product owner");
         _;
     }
 
-    // --- Các Hàm Ghi (Write Functions) ---
-
-    /**
-     * @notice Tạo một sản phẩm mới on-chain.
-     * @dev Được gọi bởi "Đầu bếp GHI" (process_queue.py) của bạn.
-     * @param _productId ID duy nhất (string) từ CSDL của bạn (ví dụ: "DA_TINH_KHIET_1")
-     * @param _name Tên sản phẩm
-     * @param _description Mô tả sản phẩm (có thể là chuỗi rỗng)
-     * @param _ipfsHash Hash IPFS (có thể là chuỗi rỗng)
-     */
+    // -----------------------------
+    // CREATE PRODUCT
+    // -----------------------------
     function createProduct(
         string memory _productId,
         string memory _name,
         string memory _description,
-        string memory _ipfsHash
+        string memory _ipfsHash,
+        string memory _manufactureDate, // Input mới
+        string memory _expiryDate       // Input mới
     ) external {
-        
-        // ---- SỬA LỖI (Dòng 43 của bạn) ----
-        // Kiểm tra xem 'owner' có phải là địa chỉ 0 (mặc định) hay không.
-        // Nếu nó *không* phải là địa chỉ 0, nghĩa là sản phẩm đã tồn tại.
-        require(
-            products[_productId].owner == address(0),
-            "Product ID already exists"
-        );
-        // ---------------------------------
 
-        // Tạo và lưu trữ struct sản phẩm mới
+        require(products[_productId].owner == address(0), "Product ID already exists");
+
         products[_productId] = Product({
             productId: _productId,
             name: _name,
             description: _description,
             ipfsHash: _ipfsHash,
-            owner: msg.sender, // (Đây sẽ là ví của BACKEND_PRIVATE_KEY)
+            manufactureDate: _manufactureDate,
+            expiryDate: _expiryDate,
+            owner: msg.sender,
             stage: StageType.Created,
             history: new string[](0)
         });
-        
-        // Phát ra sự kiện để "Đầu bếp ĐỌC" (listen_events) bắt được
-        emit ProductCreated(_productId, _name, _ipfsHash, msg.sender);
+
+        // Emit Event Hybrid: Vừa có Hash để lọc, vừa có String để đọc
+        emit ProductCreated(
+            keccak256(bytes(_productId)), // Topic 1: Hash
+            _productId,                   // Data: Readable String
+            _name,                        // Data: Readable Name
+            _manufactureDate,             // Data: Readable Date
+            _expiryDate,                  // Data: Readable Date
+            msg.sender                    // Topic 2: Owner
+        );
     }
 
-    /**
-     * @notice Cập nhật giai đoạn của một sản phẩm (ví dụ: 'Shipped')
-     * @dev (Hàm này cũng phải dùng string ID)
-     */
-    function updateStage(string memory _id, StageType _stage, string memory _note)
-        external
-        onlyOwner(_id)
+    // -----------------------------
+    // UPDATE STAGE
+    // -----------------------------
+    function updateStage(
+        string memory _id,
+        StageType _stage,
+        string memory _note
+    ) external onlyOwner(_id) 
     {
         Product storage p = products[_id];
         p.stage = _stage;
         p.history.push(_note);
-        emit StageUpdated(_id, _stage, msg.sender);
+
+        emit StageUpdated(
+            keccak256(bytes(_id)), 
+            _id, 
+            _stage, 
+            msg.sender
+        );
     }
 
-    /**
-     * @notice Chuyển quyền sở hữu sản phẩm cho người khác
-     * @dev (Hàm này cũng phải dùng string ID)
-     */
+    // -----------------------------
+    // TRANSFER OWNERSHIP
+    // -----------------------------
     function transferOwnership(string memory _id, address _newOwner)
         external
         onlyOwner(_id)
     {
         address oldOwner = products[_id].owner;
         products[_id].owner = _newOwner;
-        emit OwnershipTransferred(_id, oldOwner, _newOwner);
+
+        emit OwnershipTransferred(
+            keccak256(bytes(_id)), 
+            _id, 
+            oldOwner, 
+            _newOwner
+        );
     }
 
-    // --- Các Hàm Đọc (View Functions) ---
-    
-    // (Bạn có thể thêm các hàm 'getProduct' hoặc 'getAllProducts'
-    //  sử dụng string ID ở đây nếu cần)
+    // -----------------------------
+    // GET PRODUCT
+    // -----------------------------
+    function getProduct(string memory _id)
+        external
+        view
+        returns (
+            string memory productId,
+            string memory name,
+            string memory description,
+            string memory ipfsHash,
+            string memory manufactureDate,
+            string memory expiryDate,
+            address owner,
+            StageType stage,
+            string[] memory history
+        )
+    {
+        Product storage p = products[_id];
+        return (
+            p.productId,
+            p.name,
+            p.description,
+            p.ipfsHash,
+            p.manufactureDate,
+            p.expiryDate,
+            p.owner,
+            p.stage,
+            p.history
+        );
+    }
 }
