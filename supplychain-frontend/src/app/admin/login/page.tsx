@@ -29,10 +29,20 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
+    // Lấy URL từ biến môi trường
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+    // Kiểm tra biến môi trường
+    if (!apiUrl) {
+      setError("System Configuration Error: Missing API URL.");
+      setLoading(false);
+      return;
+    }
+
     try {
       // 1. Gửi request đăng nhập
       const response = await fetch(
-        "http://127.0.0.1:8000/api/v1/users/login/",
+        `${apiUrl}/users/login/`, // Đã cập nhật để dùng biến môi trường
         {
           method: "POST",
           headers: {
@@ -68,7 +78,7 @@ export default function LoginPage() {
 
           // b. Gọi API lấy thông tin chi tiết User để lấy Role
           const userRes = await fetch(
-            `http://127.0.0.1:8000/api/v1/users/accounts/${userId}/`,
+            `${apiUrl}/users/accounts/${userId}/`, // Đã cập nhật để dùng biến môi trường
             {
               headers: {
                 Authorization: `Bearer ${data.access}`,
@@ -93,7 +103,12 @@ export default function LoginPage() {
       router.push("/admin");
     } catch (error) {
       console.error("Login error:", error);
-      setError("Login failed. Please check your connection and try again.");
+      // Hiển thị thông báo lỗi rõ ràng hơn nếu thiếu env
+      if (error instanceof Error && error.message.includes("API URL")) {
+         setError("System Configuration Error: Missing API URL.");
+      } else {
+         setError("Login failed. Please check your connection and try again.");
+      }
     }
 
     setLoading(false);

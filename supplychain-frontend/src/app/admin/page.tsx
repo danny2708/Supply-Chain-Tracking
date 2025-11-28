@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
+import { // Import Textarea component (giả định)
   ArrowLeft,
   Plus,
   Edit2,
@@ -26,8 +26,27 @@ import {
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
-const ProductImage = ({ src, alt }: { src: string; alt: string }) => {
+// ĐÃ SỬA LỖI: Cập nhật typing để chấp nhận null/undefined và logic defensive
+const ProductImage = ({
+  src,
+  alt,
+}: {
+  src: string | null | undefined;
+  alt: string;
+}) => {
   const [isLoading, setIsLoading] = useState(true);
+
+  // Lấy API URL cho việc hiển thị ảnh IPFS (nếu cần)
+  const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs/";
+
+  // Logic SỬA LỖI: Kiểm tra src có phải là chuỗi và có giá trị trước khi gọi startsWith
+  const isString = typeof src === "string" && src.length > 0;
+  
+  const finalSrc = isString
+    ? src.startsWith("http") // Chỉ gọi startsWith nếu chắc chắn là chuỗi
+      ? src // Nếu là full URL (http...)
+      : `${IPFS_GATEWAY}${src}` // Nếu là CID, nối với Gateway
+    : "/placeholder.svg"; // Fallback
 
   return (
     <div className="relative w-20 h-20 object-cover rounded overflow-hidden bg-slate-700 shrink-0">
@@ -41,10 +60,13 @@ const ProductImage = ({ src, alt }: { src: string; alt: string }) => {
 
       {/* Actual Image */}
       <img
-        src={src || "/placeholder.svg"}
+        src={finalSrc} // Sử dụng finalSrc đã được xử lý fallback
         alt={alt}
         onLoad={() => setIsLoading(false)}
-        onError={() => setIsLoading(false)} // Tắt skeleton nếu lỗi ảnh
+        onError={(e) => {
+          e.currentTarget.src = "/placeholder.svg";
+          setIsLoading(false); // Tắt skeleton nếu lỗi ảnh
+        }}
         className={`w-full h-full object-cover transition-opacity duration-300 ${
           isLoading ? "opacity-0" : "opacity-100"
         }`}
@@ -136,6 +158,7 @@ export default function AdminPage() {
       setCurrentUserId(storedUserId);
       const loadAllData = async () => {
         try {
+          // Lấy dữ liệu API thông qua apiClient (giả định apiClient đã được cấu hình đúng)
           const productsData = await apiClient.get("/v1/products/");
           setProducts(productsData || []);
 
@@ -215,7 +238,8 @@ export default function AdminPage() {
       console.log("📌 CID:", cid);
     } catch (error) {
       console.error("Image upload failed:", error);
-      alert("Failed to upload image");
+      // Thay alert bằng modal hoặc toast message cho UX tốt hơn
+      alert("Failed to upload image"); 
     } finally {
       setUploadingImage(false);
     }
@@ -323,14 +347,21 @@ export default function AdminPage() {
   };
 
   const handleExportExcel = async () => {
+    // Lấy URL từ biến môi trường
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("accessToken");
+
+    if (!apiUrl) {
+      alert("System Configuration Error: Missing API URL.");
+      return;
+    }
+
     try {
       setIsExporting(true);
-      const token = localStorage.getItem("accessToken");
-
-      // Gọi API trực tiếp để lấy Blob (File)
-      // Lưu ý: Thay đổi URL gốc nếu cần (ví dụ lấy từ biến môi trường)
+      
+      // Gọi API trực tiếp bằng fetch để có thể xử lý Blob/File
       const response = await fetch(
-        "http://127.0.0.1:8000/api/v1/products/export_excel/",
+        `${apiUrl}/products/export_excel/`, // ĐÃ DÙNG biến môi trường
         {
           method: "GET",
           headers: {
@@ -340,7 +371,9 @@ export default function AdminPage() {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to download file");
+        const errorText = await response.text();
+        console.error("Export API failed response:", errorText);
+        throw new Error(`Failed to download file. Server response: ${response.status}`);
       }
 
       // Chuyển response thành Blob
@@ -362,7 +395,7 @@ export default function AdminPage() {
       document.body.removeChild(a);
     } catch (error: any) {
       console.error("Export failed:", error);
-      alert("Failed to export excel file.");
+      alert("Failed to export excel file. Check console for details.");
     } finally {
       setIsExporting(false);
     }
@@ -898,8 +931,8 @@ export default function AdminPage() {
                         {(productFormData.ipfs ||
                           productFormData.image_preview) && (
                           <div className="relative w-24 h-24">
+                            {/* Đã sửa logic hiển thị ảnh ở component ProductImage */}
                             <img
-                              /* SỬA 2: Logic chọn nguồn ảnh thông minh hơn */
                               src={
                                 productFormData.image_preview
                                   ? productFormData.image_preview // Ưu tiên ảnh vừa chọn từ máy
@@ -988,105 +1021,6 @@ export default function AdminPage() {
 
             {/* Products List */}
             <div className="grid gap-4">
-              {/* {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
-                  
-                  <Card
-                    key={product.product_id}
-                    className="bg-slate-800 border-slate-700 hover:border-slate-600 transition"
-                  >
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <ProductImage src={product.ipfs} alt={product.name} />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Package className="w-5 h-5 text-blue-500" />
-                            <h3 className="text-lg font-semibold text-white">
-                              {product.name}
-                            </h3>
-                          </div>
-                          <p className="text-sm text-slate-300 mb-2 line-clamp-2">
-                            {product.description}
-                          </p>
-                          <p className="text-sm text-slate-400 mb-1">
-                            ID:{" "}
-                            <span className="font-mono text-blue-400">
-                              {product.product_id}
-                            </span>
-                          </p>
-                          <p className="text-sm text-slate-400 mb-2">
-                            User:{" "}
-                            <span className="font-mono text-blue-400">
-                              {product.user_id}
-                            </span>
-                          </p>
-                          {product.ipfs && (
-                            <p className="text-xs text-green-400 mb-2">
-                              IPFS: {product.ipfs}
-                            </p>
-                          )}
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <p className="text-slate-400">Manufacture</p>
-                              <p className="text-white">
-                                {product.manufacture_date
-                                  ? new Date(
-                                      product.manufacture_date
-                                    ).toLocaleDateString("vi-VN")
-                                  : "N/A"}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-slate-400">Expiry</p>
-                              <p className="text-white">
-                                {product.expiry_date
-                                  ? new Date(
-                                      product.expiry_date
-                                    ).toLocaleDateString("vi-VN")
-                                  : "N/A"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-2 bg-transparent"
-                            onClick={() => {
-                              setSelectedQrProduct(product);
-                              setShowQrModal(true);
-                            }}
-                          >
-                            <QrCode className="w-4 h-4" />
-                            QR Code
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-2 bg-transparent"
-                            onClick={() => handleEditProduct(product)}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="gap-2"
-                            onClick={() =>
-                              handleDeleteProduct(product.product_id)
-                            }
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : ( */}
               {filteredProducts.length > 0 ? (
                 filteredProducts.map((product) => {
                   const ownerId = product.user_id || product.user;
@@ -1260,24 +1194,6 @@ export default function AdminPage() {
                 <CardContent>
                   <form onSubmit={handleAddEvent} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* <div>
-                        <label className="text-sm font-medium text-slate-300 block mb-2">
-                          Transaction ID
-                        </label>
-                        <Input
-                          type="text"
-                          placeholder="TXN001"
-                          value={eventFormData.transaction_id}
-                          onChange={(e) =>
-                            setEventFormData({
-                              ...eventFormData,
-                              transaction_id: e.target.value,
-                            })
-                          }
-                          disabled={!!editingEventId}
-                          className="bg-slate-700 border-slate-600 text-white disabled:opacity-50"
-                        />
-                      </div> */}
                       <div>
                         <label className="text-sm font-medium text-slate-300 block mb-2">
                           Transaction ID
@@ -1288,23 +1204,6 @@ export default function AdminPage() {
                           className="bg-slate-700 border-slate-600 text-white opacity-50"
                         />
                       </div>
-                      {/* <div>
-                        <label className="text-sm font-medium text-slate-300 block mb-2">
-                          Product ID
-                        </label>
-                        <Input
-                          type="text"
-                          placeholder="PROD001"
-                          value={eventFormData.product_id}
-                          onChange={(e) =>
-                            setEventFormData({
-                              ...eventFormData,
-                              product_id: e.target.value,
-                            })
-                          }
-                          className="bg-slate-700 border-slate-600 text-white"
-                        />
-                      </div> */}
                       <div>
                         <label className="text-sm font-medium text-slate-300 block mb-2">
                           Product ID
@@ -1324,23 +1223,6 @@ export default function AdminPage() {
                           }`}
                         />
                       </div>
-                      {/* <div>
-                        <label className="text-sm font-medium text-slate-300 block mb-2">
-                          Order Status
-                        </label>
-                        <Input
-                          type="text"
-                          placeholder="In Transit"
-                          value={eventFormData.order_status}
-                          onChange={(e) =>
-                            setEventFormData({
-                              ...eventFormData,
-                              order_status: e.target.value,
-                            })
-                          }
-                          className="bg-slate-700 border-slate-600 text-white"
-                        />
-                      </div> */}
                       <div>
                         <label className="text-sm font-medium text-slate-300 block mb-2">
                           Order Status
@@ -1362,22 +1244,6 @@ export default function AdminPage() {
                           }`}
                         />
                       </div>
-                      {/* <div>
-                        <label className="text-sm font-medium text-slate-300 block mb-2">
-                          Assign Date
-                        </label>
-                        <Input
-                          type="date"
-                          value={eventFormData.assign_date}
-                          onChange={(e) =>
-                            setEventFormData({
-                              ...eventFormData,
-                              assign_date: e.target.value,
-                            })
-                          }
-                          className="bg-slate-700 border-slate-600 text-white"
-                        />
-                      </div> */}
                       <div>
                         <label className="text-sm font-medium text-slate-300 block mb-2">
                           Assign Date
@@ -1400,22 +1266,6 @@ export default function AdminPage() {
                           }`}
                         />
                       </div>
-                      {/* <div className="md:col-span-2">
-                        <label className="text-sm font-medium text-slate-300 block mb-2">
-                          Received Date
-                        </label>
-                        <Input
-                          type="date"
-                          value={eventFormData.received_date}
-                          onChange={(e) =>
-                            setEventFormData({
-                              ...eventFormData,
-                              received_date: e.target.value,
-                            })
-                          }
-                          className="bg-slate-700 border-slate-600 text-white"
-                        />
-                      </div> */}
                       <div className="md:col-span-2">
                         <label className="text-sm font-medium text-slate-300 block mb-2">
                           Received Date
@@ -1529,17 +1379,6 @@ export default function AdminPage() {
                             <Edit2 className="w-4 h-4" />
                             Edit
                           </Button>
-                          {/* <Button
-                            variant="destructive"
-                            size="sm"
-                            className="gap-2"
-                            onClick={() =>
-                              handleDeleteEvent(event.transaction_id)
-                            }
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
-                          </Button> */}
                           {userRole === "manager" && (
                             <Button
                               variant="destructive"
