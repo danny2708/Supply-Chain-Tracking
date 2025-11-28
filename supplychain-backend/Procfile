@@ -1,3 +1,0 @@
-web: gunicorn supplychain_backend.wsgi:application
-queue: python manage.py process_queue
-listener: python manage.py listen_events
