@@ -1,11 +1,17 @@
 {
-  "address": "0x93981a4870e7d252C6d282a01C462Ca33248F2F1",
+  "address": "0xE26D4450D15b6e95E620342ef4382830f45E2594",
   "abi": [
     {
       "anonymous": false,
       "inputs": [
         {
           "indexed": true,
+          "internalType": "bytes32",
+          "name": "productIdHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
           "internalType": "string",
           "name": "productId",
           "type": "string"
@@ -31,6 +37,12 @@
       "inputs": [
         {
           "indexed": true,
+          "internalType": "bytes32",
+          "name": "productIdHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
           "internalType": "string",
           "name": "productId",
           "type": "string"
@@ -44,7 +56,13 @@
         {
           "indexed": false,
           "internalType": "string",
-          "name": "ipfsHash",
+          "name": "manufactureDate",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "expiryDate",
           "type": "string"
         },
         {
@@ -62,6 +80,12 @@
       "inputs": [
         {
           "indexed": true,
+          "internalType": "bytes32",
+          "name": "productIdHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
           "internalType": "string",
           "name": "productId",
           "type": "string"
@@ -103,11 +127,80 @@
           "internalType": "string",
           "name": "_ipfsHash",
           "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_manufactureDate",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_expiryDate",
+          "type": "string"
         }
       ],
       "name": "createProduct",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_id",
+          "type": "string"
+        }
+      ],
+      "name": "getProduct",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "productId",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "ipfsHash",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "manufactureDate",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "expiryDate",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "enum SupplyChain.StageType",
+          "name": "stage",
+          "type": "uint8"
+        },
+        {
+          "internalType": "string[]",
+          "name": "history",
+          "type": "string[]"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -138,6 +231,16 @@
         {
           "internalType": "string",
           "name": "ipfsHash",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "manufactureDate",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "expiryDate",
           "type": "string"
         },
         {

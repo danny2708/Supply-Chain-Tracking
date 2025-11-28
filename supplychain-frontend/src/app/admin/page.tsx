@@ -656,6 +656,7 @@ export default function AdminPage() {
                 Filter By
               </label>
               <select
+                aria-label="Filter By"
                 value={filterKey}
                 onChange={(e) => {
                   setFilterKey(e.target.value);
@@ -742,6 +743,7 @@ export default function AdminPage() {
                   <>
                     {/* --- NÚT IMPORT EXCEL MỚI --- */}
                     <input
+                      aria-label="Import Excel File"
                       type="file"
                       ref={fileInputRef}
                       onChange={handleImportExcel}
@@ -913,6 +915,7 @@ export default function AdminPage() {
                             />
 
                             <button
+                              aria-label="Remove Image"
                               type="button"
                               onClick={() =>
                                 setProductFormData({

@@ -3,15 +3,10 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from products.models import Product
 
-# 1. TÁI SỬ DỤNG HOÀN TOÀN TỆP SERVICE CỦA BẠN
-# --------------------------------------------------
-# Import các biến đã được khởi tạo (w3, contract, account)
-# từ file blockchain_service.py trong app 'app'
 try:
     from app.services.blockchain_service import w3, supply_chain_contract, backend_account
 except ImportError as e:
     raise ImportError(f"Không thể import 'app.services.blockchain_service'. Hãy chắc chắn 'app' nằm trong INSTALLED_APPS. Lỗi: {e}")
-# --------------------------------------------------
 
 class Command(BaseCommand):
     help = 'Chạy listener (Worker) để xử lý các tác vụ on-chain từ hàng đợi CSDL'
@@ -50,24 +45,33 @@ class Command(BaseCommand):
                 # --- 2. BẮT ĐẦU XỬ LÝ ON-CHAIN (VIỆC CHẬM) ---
                 product = product_to_process
 
+                # Chuẩn bị dữ liệu (Handle Null values)
                 description = product.description or ""
-                ipfs_hash = product.ipfs or ""
+                # ipfs_payload_for_chain = product.ipfs or "" # Dùng dòng này nếu muốn gửi IPFS lên chain
+                ipfs_payload_for_chain = "" # Để trống tiết kiệm gas như yêu cầu cũ
+
+                # --- XỬ LÝ DATE MỚI CHO CONTRACT HYBRID ---
+                # Chuyển đổi Date Object sang String (YYYY-MM-DD)
+                # Nếu DB lưu None thì truyền chuỗi rỗng ""
+                manufacture_date_str = str(product.manufacture_date) if product.manufacture_date else ""
+                expiry_date_str = str(product.expiry_date) if product.expiry_date else ""
+
                 self.stdout.write(self.style.WARNING(
                     f"--- [WORKER]: Đang xử lý on-chain cho {product.product_id}..."
                 ))
                 
-                # Worker: khi gửi transaction, không gửi CID/ipfs để tiết kiệm gas.
-                # Chúng ta vẫn giữ CID trong DB để FE hiển thị, nhưng on-chain sẽ chứa empty string.
-                ipfs_payload_for_chain = "" 
+                # Gọi hàm createProduct với 6 tham số (đã cập nhật)
                 tx = supply_chain_contract.functions.createProduct(
                     product.product_id,
                     product.name,
                     description,
-                    ipfs_payload_for_chain
+                    ipfs_payload_for_chain,
+                    manufacture_date_str,   # <--- THAM SỐ MỚI 1
+                    expiry_date_str         # <--- THAM SỐ MỚI 2
                 ).build_transaction({
                     'from': backend_account.address,
                     'nonce': w3.eth.get_transaction_count(backend_account.address),
-                    'gas': 2000000,
+                    'gas': 2500000, # Tăng gas một chút vì hàm phức tạp hơn
                 })
 
                 # Ký và gửi giao dịch
@@ -89,8 +93,8 @@ class Command(BaseCommand):
 
             except Exception as e:
                 # 4. GHI NHẬN LỖI
-                self.stdout.write(self.style.ERROR(f"--- [WORKER]: Lỗi khi xử lý {product.product_id}: {e}"))
-                if product:
-                    product.on_chain_status = 'failed'
-                    product.save()
+                self.stdout.write(self.style.ERROR(f"--- [WORKER]: Lỗi khi xử lý {product_to_process.product_id if product_to_process else 'Unknown'}: {e}"))
+                if product_to_process:
+                    product_to_process.on_chain_status = 'failed'
+                    product_to_process.save()
                 time.sleep(10) # Nghỉ ngơi khi có lỗi
