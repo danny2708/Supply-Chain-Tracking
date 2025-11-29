@@ -159,18 +159,18 @@ export default function AdminPage() {
       const loadAllData = async () => {
         try {
           // Lấy dữ liệu API thông qua apiClient (giả định apiClient đã được cấu hình đúng)
-          const productsData = await apiClient.get("/v1/products/");
+          const productsData = await apiClient.get("/products/");
           setProducts(productsData || []);
 
-          const eventsData = await apiClient.get("/v1/tracking/events/");
+          const eventsData = await apiClient.get("/tracking/events/");
           setEvents(eventsData || []);
 
           const transportersData = await apiClient.get(
-            "/v1/users/transporters/"
+            "/users/transporters/"
           );
           setTransporters(transportersData || []);
 
-          const retailersData = await apiClient.get("/v1/users/retailers/");
+          const retailersData = await apiClient.get("/users/retailers/");
           setRetailers(retailersData || []);
         } catch (error: any) {
           console.error("Failed to load data:", error);
@@ -246,7 +246,7 @@ export default function AdminPage() {
   };
 
   const fetchProducts = async () => {
-    const productsData = await apiClient.get("/v1/products/");
+    const productsData = await apiClient.get("/products/");
     setProducts(productsData);
   };
 
@@ -258,10 +258,10 @@ export default function AdminPage() {
 
     try {
       if (editingProductId) {
-        await apiClient.put(`/v1/products/${editingProductId}/`, payload);
+        await apiClient.put(`/products/${editingProductId}/`, payload);
         setEditingProductId(null);
       } else {
-        await apiClient.post("/v1/products/", payload);
+        await apiClient.post("/products/", payload);
       }
 
       setProductFormData({
@@ -291,7 +291,7 @@ export default function AdminPage() {
   const handleDeleteProduct = async (productId: string) => {
     if (confirm("Are you sure you want to delete this product?")) {
       try {
-        await apiClient.delete(`/v1/products/${productId}/`);
+        await apiClient.delete(`/products/${productId}/`);
 
         // Cập nhật UI (Cách 1: Tải lại toàn bộ)
         await fetchProducts();
@@ -322,7 +322,7 @@ export default function AdminPage() {
       formData.append("file", file);
 
       const response = await apiClient.postWithFile(
-        "/v1/products/import_excel/",
+        "/products/import_excel/",
         formData
       );
 
@@ -402,7 +402,7 @@ export default function AdminPage() {
   };
 
   const fetchEvents = async () => {
-    const data = await apiClient.get("/v1/tracking/events/");
+    const data = await apiClient.get("/tracking/events/");
     setEvents(data || []);
   };
 
@@ -430,7 +430,7 @@ export default function AdminPage() {
         }
 
         await apiClient.patch(
-          `/v1/tracking/events/${editingEventId}/`,
+          `/tracking/events/${editingEventId}/`,
           payload
         );
       } else {
@@ -442,7 +442,7 @@ export default function AdminPage() {
           payload.received_date = null;
         }
 
-        await apiClient.post("/v1/tracking/events/", eventFormData);
+        await apiClient.post("/tracking/events/", eventFormData);
       }
 
       // Reset form & Refresh data
@@ -482,7 +482,7 @@ export default function AdminPage() {
   const handleDeleteEvent = async (transactionId: string) => {
     if (confirm("Are you sure you want to delete this event?")) {
       try {
-        await apiClient.delete(`/v1/tracking/events/${transactionId}/`);
+        await apiClient.delete(`/tracking/events/${transactionId}/`);
         await fetchEvents();
       } catch (error: any) {
         console.error("Failed to delete event:", error);
@@ -492,7 +492,7 @@ export default function AdminPage() {
   };
 
   const fetchTransporters = async () => {
-    const data = await apiClient.get("/v1/users/transporters/");
+    const data = await apiClient.get("/users/transporters/");
     setTransporters(data || []);
   };
 
@@ -502,12 +502,12 @@ export default function AdminPage() {
       if (editingTransporterId) {
         // UPDATE
         await apiClient.put(
-          `/v1/users/transporters/${editingTransporterId}/`,
+          `/users/transporters/${editingTransporterId}/`,
           transporterFormData
         );
       } else {
         // CREATE
-        await apiClient.post("/v1/users/transporters/", transporterFormData);
+        await apiClient.post("/users/transporters/", transporterFormData);
       }
 
       setTransporterFormData({ transporter_id: "", name: "" });
@@ -530,7 +530,7 @@ export default function AdminPage() {
   const handleDeleteTransporter = async (transporterId: string) => {
     if (confirm("Are you sure you want to delete this transporter?")) {
       try {
-        await apiClient.delete(`/v1/users/transporters/${transporterId}/`);
+        await apiClient.delete(`/users/transporters/${transporterId}/`);
         await fetchTransporters();
       } catch (error: any) {
         console.error("Failed to delete transporter:", error);
@@ -540,7 +540,7 @@ export default function AdminPage() {
   };
 
   const fetchRetailers = async () => {
-    const data = await apiClient.get("/v1/users/retailers/");
+    const data = await apiClient.get("/users/retailers/");
     setRetailers(data || []);
   };
 
@@ -550,12 +550,12 @@ export default function AdminPage() {
       if (editingRetailerId) {
         // UPDATE
         await apiClient.put(
-          `/v1/users/retailers/${editingRetailerId}/`,
+          `/users/retailers/${editingRetailerId}/`,
           retailerFormData
         );
       } else {
         // CREATE
-        await apiClient.post("/v1/users/retailers/", retailerFormData);
+        await apiClient.post("/users/retailers/", retailerFormData);
       }
 
       setRetailerFormData({
@@ -582,7 +582,7 @@ export default function AdminPage() {
   const handleDeleteRetailer = async (retailerId: string) => {
     if (confirm("Are you sure you want to delete this retailer?")) {
       try {
-        await apiClient.delete(`/v1/users/retailers/${retailerId}/`);
+        await apiClient.delete(`/users/retailers/${retailerId}/`);
         await fetchRetailers();
       } catch (error: any) {
         console.error("Failed to delete retailer:", error);

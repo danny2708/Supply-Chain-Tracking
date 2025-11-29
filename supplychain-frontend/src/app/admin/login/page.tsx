@@ -194,11 +194,11 @@ export default function LoginPage() {
               <div className="bg-slate-700/50 rounded p-3 space-y-1 text-xs text-slate-300">
                 <p>
                   Username:{" "}
-                  <span className="font-mono text-blue-400">admin</span>
+                  <span className="font-mono text-blue-400">manager</span>
                 </p>
                 <p>
                   Password:{" "}
-                  <span className="font-mono text-blue-400">123456</span>
+                  <span className="font-mono text-blue-400">manager</span>
                 </p>
               </div>
             </div>
