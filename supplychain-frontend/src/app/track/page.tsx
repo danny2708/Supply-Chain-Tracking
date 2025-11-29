@@ -26,6 +26,10 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// 🚨 ĐÃ SỬA LỖI: Lấy URL API từ biến môi trường
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
+
+
 export default function TrackPage() {
   const [productId, setProductId] = useState("");
   const [product, setProduct] = useState<any>(null);
@@ -108,10 +112,11 @@ export default function TrackPage() {
     setEvents([]);
 
     try {
-      // GỌI API
-      const response = await fetch(
-        `http://127.0.0.1:8000/api/v1/products/${searchId}/`
-      );
+      // 🚨 ĐÃ SỬA: Sử dụng API_URL cho products
+      const productUrl = `${API_URL}/products/${searchId}/`;
+      
+      // GỌI API - Lấy thông tin sản phẩm
+      const response = await fetch(productUrl);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -125,10 +130,12 @@ export default function TrackPage() {
 
       const data = await response.json();
       setProduct(data);
-      // Nếu backend trả về trực tiếp object sản phẩm (có trường product_id hoặc id)
-      const eventsRes = await fetch(
-        `http://127.0.0.1:8000/api/v1/tracking/events/?product_id=${searchId}`
-      );
+      
+      // GỌI API - Lấy các sự kiện tracking
+      // 🚨 ĐÃ SỬA: Sử dụng API_URL cho events
+      const eventsUrl = `${API_URL}/tracking/events/?product_id=${searchId}`;
+      const eventsRes = await fetch(eventsUrl);
+      
       if (eventsRes.ok) {
         const eventsData = await eventsRes.json();
 
@@ -186,7 +193,7 @@ export default function TrackPage() {
             isLoading ? "opacity-0" : "opacity-100"
           }`}
         />
-      </div>
+        </div>
     );
   };
 
@@ -240,9 +247,9 @@ export default function TrackPage() {
 
         /* 5. Vùng hiển thị Camera/Vùng chờ */
         #reader__scan_region {
-           border: 2px dashed #64748b !important; /* Slate-500 */
-           background-color: #0f172a !important; /* Slate-900 */
-           margin-bottom: 15px !important;
+            border: 2px dashed #64748b !important; /* Slate-500 */
+            background-color: #0f172a !important; /* Slate-900 */
+            margin-bottom: 15px !important;
         }
 
         /* 6. Dropdown chọn camera */
