@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-echo "🔧 Running migrations with --fake-initial..."
+echo "🔧 Running migrations."
 # Lệnh này sẽ áp dụng các migration chưa có, và giả lập các migration
 # mà Django thấy bảng của nó đã tồn tại trong DB (như bảng account).
-python manage.py migrate --fake-initial
+python manage.py migrate 
 
 echo "📦 Collecting static files..."
 python manage.py collectstatic --noinput
