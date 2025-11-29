@@ -1,1 +1,0 @@
-worker: python supplychain-backend/process_queue.py
