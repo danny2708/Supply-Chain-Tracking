@@ -1,5 +1,5 @@
 import os
-import sys # Cần thiết cho việc sửa lỗi đường dẫn nếu cần
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
@@ -12,19 +12,21 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # === CẤU HÌNH CHÍNH ===
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-key-change-me-in-prod')
-# Quan trọng: Trên Railway phải đặt biến môi trường DEBUG=False
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-# === ALLOWED_HOSTS ===
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
-if not ALLOWED_HOSTS:
+# === ALLOWED_HOSTS (Đã sửa: Thêm domain Railway vào default) ===
+# Biến này phải chứa domain Railway và Vercel (nếu Vercel truy cập trực tiếp)
+ALLOWED_HOSTS_DEFAULT = ['127.0.0.1', 'localhost', 'supply-chain-tracking-production.up.railway.app']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', ','.join(ALLOWED_HOSTS_DEFAULT)).split(',')
+
+# Thêm wildcards cho Railway nếu cần
+if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['']:
     ALLOWED_HOSTS = ['*']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.Account'
 
-# === INSTALLED_APPS (KHẮC PHỤC LỖI XUNG ĐỘT ĐƯỜNG DẪN) ===
-# Chúng ta sẽ sử dụng AppConfig Class để chỉ định rõ ràng đường dẫn
+# === INSTALLED_APPS (Giữ nguyên cấu hình AppConfig) ===
 INSTALLED_APPS = [
     # Mặc định
     'django.contrib.admin',
@@ -39,9 +41,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework_simplejwt',
     
-    # Các app của bạn (Sử dụng AppConfig Class để tránh xung đột path)
-    # Dựa trên cấu trúc: users (ảnh 2), app (ảnh 1)
-    # LƯU Ý: Nếu app 'core' không phải là app Django, hãy xóa nó
+    # Các app của bạn
     'core', 
     'users.apps.UsersConfig',
     'products',
@@ -52,7 +52,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # THÊM DÒNG NÀY ĐỂ RAILWAY HIỂN THỊ CSS ADMIN
     'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -81,11 +80,10 @@ TEMPLATES = [
     },
 ]
 
-# === CẤU HÌNH DATABASE (ĐÃ GIẢI QUYẾT LỖI DB) ===
+# === CẤU HÌNH DATABASE (Đã giải quyết lỗi DB) ===
 database_url_config = dj_database_url.config(conn_max_age=600)
 
 if not database_url_config:
-    # Fallback cho trường hợp không set DATABASE_URL
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -101,9 +99,27 @@ else:
         'default': database_url_config
     }
 
-# === CORS & CSRF (QUAN TRỌNG CHO NEXT.JS) ===
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000').split(',')
+# === CORS & CSRF (Cấu hình trao đổi Credentials) ===
+# 🚨 QUAN TRỌNG: Thêm CORS_ALLOW_CREDENTIALS
+CORS_ALLOW_CREDENTIALS = True 
+
+# Đảm bảo domain Vercel được liệt kê
+# Cần phải là https://supply-chain-tracking-five.vercel.app
+CORS_ALLOWED_ORIGINS_DEFAULT = [
+    'http://localhost:3000', 
+    'http://127.0.0.1:3000',
+    'https://supply-chain-tracking-five.vercel.app', # <-- Thêm domain Frontend
+]
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', ','.join(CORS_ALLOWED_ORIGINS_DEFAULT)).split(',')
+
+
+# Cần thiết cho các request POST từ Vercel
+CSRF_TRUSTED_ORIGINS_DEFAULT = [
+    'http://localhost:3000',
+    'https://supply-chain-tracking-five.vercel.app', # <-- Thêm domain Vercel
+]
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', ','.join(CSRF_TRUSTED_ORIGINS_DEFAULT)).split(',')
+
 
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -117,7 +133,7 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-# === STATIC FILES (QUAN TRỌNG CHO ADMIN PAGE) ===
+# === STATIC FILES ===
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
