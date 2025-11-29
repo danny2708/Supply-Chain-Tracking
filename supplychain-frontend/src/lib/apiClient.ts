@@ -1,7 +1,7 @@
 // app/lib/apiClient.ts
 
 // URL backend Django của bạn
-const API_URL = "http://127.0.0.1:8000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Hàm helper để tự động thêm header
 const getAuthHeaders = () => {
