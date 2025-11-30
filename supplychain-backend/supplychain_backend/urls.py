@@ -7,9 +7,7 @@ api_v1_patterns = [
     path('products/', include('products.urls')),
     path('users/', include('users.urls')),
     path('tracking/', include('tracking.urls')),
-    # (Thêm các app khác của bạn như 'certificates', 'ipfs' vào đây)
-    # path('certificates/', include('certificates.urls')),
-    # path('ipfs/', include('ipfs.urls')),
+    path('pinata/', include('ipfs.urls')),
 ]
 
 urlpatterns = [
