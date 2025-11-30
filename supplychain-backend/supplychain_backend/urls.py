@@ -7,7 +7,8 @@ api_v1_patterns = [
     path('products/', include('products.urls')),
     path('users/', include('users.urls')),
     path('tracking/', include('tracking.urls')),
-    path('pinata/', include('ipfs.urls')),
+    # Đường dẫn này sẽ tạo ra /api/v1/pinata/...
+    path('pinata/', include('ipfs.urls')), 
 ]
 
 urlpatterns = [
@@ -15,5 +16,6 @@ urlpatterns = [
     
     # --- ĐĂNG KÝ TẤT CẢ API V1 DƯỚI MỘT TIỀN TỐ DUY NHẤT ---
     path('api/v1/', include(api_v1_patterns)),
-    path("api/pinata/", include("ipfs.urls")), 
+    
+    # 🔴 ĐÃ XÓA DÒNG GÂY LỖI: path("api/pinata/", include("ipfs.urls")), 
 ]
