@@ -50,18 +50,26 @@ const Button = ({
   const baseStyles =
     "inline-flex items-center justify-center rounded-md text-sm font-medium transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 cursor-pointer active:scale-95";
   const variants = {
-    default: "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-900/20 hover:shadow-lg",
+    default:
+      "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-900/20 hover:shadow-lg",
     outline:
       "border border-slate-600 bg-transparent hover:bg-slate-800 text-slate-300 hover:text-white",
     success:
       "bg-green-600 text-white hover:bg-green-700 shadow-md shadow-green-900/20 hover:shadow-lg",
   };
 
-  let appliedClass = `${baseStyles} ${variants[variant] || variants.default} ${className}`;
+  let appliedClass = `${baseStyles} ${
+    variants[variant] || variants.default
+  } ${className}`;
 
   // Bọc button bằng motion.button để có hiệu ứng tap nhẹ
   return (
-    <motion.button whileTap={{ scale: 0.97 }} className={appliedClass} onClick={onClick} {...props}>
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      className={appliedClass}
+      onClick={onClick}
+      {...props}
+    >
       {children}
     </motion.button>
   );
@@ -83,7 +91,9 @@ const CardHeader = ({ className = "", children }) => (
 );
 
 const CardTitle = ({ className = "", children }) => (
-  <h3 className={`font-semibold leading-none tracking-tight flex items-center gap-2 ${className}`}>
+  <h3
+    className={`font-semibold leading-none tracking-tight flex items-center gap-2 ${className}`}
+  >
     {children}
   </h3>
 );
@@ -116,7 +126,12 @@ const AnimatedBackground = () => (
         x: [0, -50, 0],
         y: [0, 100, 0],
       }}
-      transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+      transition={{
+        duration: 15,
+        repeat: Infinity,
+        ease: "easeInOut",
+        delay: 2,
+      }}
       className="absolute bottom-[-10%] right-[-10%] w-[35vw] h-[35vw] bg-green-900/20 rounded-full blur-3xl mix-blend-screen"
     />
   </div>
@@ -202,9 +217,15 @@ export default function Page() {
               <>
                 <span className="hidden md:inline-block text-sm text-slate-300">
                   Logged in as:{" "}
-                  <span className="font-semibold text-blue-400">{adminName}</span>
+                  <span className="font-semibold text-blue-400">
+                    {adminName}
+                  </span>
                 </span>
-                <Button onClick={handleLogout} variant="outline" className="gap-2">
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  className="gap-2"
+                >
                   <LogOut className="w-4 h-4" />
                   Logout
                 </Button>
@@ -243,16 +264,19 @@ export default function Page() {
               <Search className="w-32 h-32 text-blue-500" />
             </div>
             <CardHeader>
-              <CardTitle className="text-2xl">
+              <CardTitle className="text-white flex items-center gap-2 text-xl">
                 <Search className="w-6 h-6 text-blue-500" />
                 Track Product
               </CardTitle>
-              <CardDescription>Scan QR code or search for product information</CardDescription>
+              <CardDescription>
+                Scan QR code or search for product information
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
               <p className="text-slate-300 leading-relaxed text-lg">
-                Enter a product ID or scan the QR code on your product to view detailed tracking
-                information including transporter details, location, and delivery status.
+                Enter a product ID or scan the QR code on your product to view
+                detailed tracking information including transporter details,
+                location, and delivery status.
               </p>
               <Button
                 className="w-full h-14 text-lg shadow-blue-500/20"
@@ -266,30 +290,39 @@ export default function Page() {
           {/* 2. Admin Panel Card */}
           {isAdmin && (
             <Card
-              whileHover={{ scale: 1.02, borderColor: "rgba(34, 197, 94, 0.5)" }}
+              whileHover={{
+                scale: 1.02,
+                borderColor: "rgba(34, 197, 94, 0.5)",
+              }}
               transition={{ duration: 0.2 }}
               className="cursor-pointer group relative overflow-hidden"
             >
               {/* Thêm dải màu trang trí */}
               <div className="absolute top-0 left-0 w-2 h-full bg-green-500/50"></div>
-               <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity">
+              <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity">
                 <Settings className="w-32 h-32 text-green-500 rotate-12" />
-            </div>
+              </div>
 
               <CardHeader>
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-white flex items-center gap-2 text-xl">
                   <Settings className="w-6 h-6 text-green-500 group-hover:rotate-90 transition-transform duration-700" />
                   Admin Panel
                 </CardTitle>
-                <CardDescription>Manage products and tracking events</CardDescription>
+                <CardDescription>
+                  Manage products and tracking events
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
                 <p className="text-slate-300 leading-relaxed text-lg">
-                  Access administrative features to create, update products, update tracking information,
-                  import or export information and monitor the supply chain system integrity. 
+                  Access administrative features to create, update products,
+                  update tracking information, import or export information and
+                  monitor the supply chain system integrity.
                 </p>
                 <a href="/admin" className="w-full block">
-                  <Button variant="success" className="w-full h-14 text-lg shadow-green-500/20">
+                  <Button
+                    variant="success"
+                    className="w-full h-14 text-lg shadow-green-500/20"
+                  >
                     Go to Dashboard
                   </Button>
                 </a>
@@ -301,7 +334,9 @@ export default function Page() {
         {/* About Section */}
         <Card className="mt-12 bg-slate-800/40">
           <CardHeader>
-            <CardTitle>About This System</CardTitle>
+            <CardTitle className="text-white text-lg">
+              About This System
+            </CardTitle>
           </CardHeader>
           <CardContent className="text-slate-300 space-y-4">
             <div className="flex gap-4 items-start">
@@ -309,9 +344,10 @@ export default function Page() {
                 <ShieldCheck className="w-5 h-5 text-blue-400" />
               </div>
               <p>
-                This supply chain tracking system allows customers to verify product authenticity
-                and track delivery status in real-time using <strong>Blockchain technology</strong>{" "}
-                for immutable records.
+                This supply chain tracking system allows customers to verify
+                product authenticity and track delivery status in real-time
+                using <strong>Blockchain technology</strong> for immutable
+                records.
               </p>
             </div>
             <div className="flex gap-4 items-start">
@@ -319,16 +355,17 @@ export default function Page() {
                 <Truck className="w-5 h-5 text-green-400" />
               </div>
               <p>
-                Administrators can manage products, update tracking events throughout the journey
-                from manufacturer to end consumer.
+                Administrators can manage products, update tracking events
+                throughout the journey from manufacturer to end consumer.
               </p>
             </div>
-             <div className="flex gap-4 items-start">
+            <div className="flex gap-4 items-start">
               <div className="p-2 bg-slate-700/50 rounded-lg shrink-0">
                 <Box className="w-5 h-5 text-purple-400" />
               </div>
               <p>
-                Ensure transparency and trust in every step of the supply chain process.
+                Ensure transparency and trust in every step of the supply chain
+                process.
               </p>
             </div>
           </CardContent>
@@ -350,14 +387,15 @@ export default function Page() {
             <div className="relative w-12 h-12 overflow-hidden rounded-full bg-gradient-to-tr from-slate-800 to-slate-700 p-[2px] group-hover:from-blue-400 group-hover:to-blue-600 transition-colors flex-shrink-0">
               <div className="w-full h-full rounded-full overflow-hidden bg-slate-900">
                 <img
-                  // ĐƯỜNG DẪN ẢNH ĐÃ SỬA. 
+                  // ĐƯỜNG DẪN ẢNH ĐÃ SỬA.
                   src="/sepolia.png"
                   alt="Sepolia Network"
                   className="object-cover w-full h-full scale-110 group-hover:scale-125 transition-transform duration-500"
                   // FIX LỖI TYPE: Sử dụng e.currentTarget thay vì e.target để TS hiểu đúng kiểu Element
                   onError={(e) => {
                     e.currentTarget.onerror = null;
-                    e.currentTarget.src = "https://via.placeholder.com/48/1e293b/3b82f6?text=ETH";
+                    e.currentTarget.src =
+                      "https://via.placeholder.com/48/1e293b/3b82f6?text=ETH";
                   }}
                 />
               </div>

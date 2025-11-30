@@ -93,7 +93,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     # ---- 4. API TRUY VẤN LỊCH SỬ SẢN PHẨM (Yêu cầu của bạn) ----
     # API này sẽ tạo ra URL: GET /api/v1/products/{product_id}/history/
     @action(detail=True, methods=['get'])
-    def history(self, request, pk=None):
+    def history(self, request, product_id=None):
         """
         Trả về tất cả các tracking event (lịch sử)
         liên quan đến một sản phẩm cụ thể.
