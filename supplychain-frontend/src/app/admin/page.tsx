@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { // Import Textarea component (giả định)
+import {
   ArrowLeft,
   Plus,
   Edit2,
@@ -41,7 +41,7 @@ const ProductImage = ({
 
   // Logic SỬA LỖI: Kiểm tra src có phải là chuỗi và có giá trị trước khi gọi startsWith
   const isString = typeof src === "string" && src.length > 0;
-  
+
   const finalSrc = isString
     ? src.startsWith("http") // Chỉ gọi startsWith nếu chắc chắn là chuỗi
       ? src // Nếu là full URL (http...)
@@ -165,9 +165,7 @@ export default function AdminPage() {
           const eventsData = await apiClient.get("/tracking/events/");
           setEvents(eventsData || []);
 
-          const transportersData = await apiClient.get(
-            "/users/transporters/"
-          );
+          const transportersData = await apiClient.get("/users/transporters/");
           setTransporters(transportersData || []);
 
           const retailersData = await apiClient.get("/users/retailers/");
@@ -239,7 +237,7 @@ export default function AdminPage() {
     } catch (error) {
       console.error("Image upload failed:", error);
       // Thay alert bằng modal hoặc toast message cho UX tốt hơn
-      alert("Failed to upload image"); 
+      alert("Failed to upload image");
     } finally {
       setUploadingImage(false);
     }
@@ -358,7 +356,7 @@ export default function AdminPage() {
 
     try {
       setIsExporting(true);
-      
+
       // Gọi API trực tiếp bằng fetch để có thể xử lý Blob/File
       const response = await fetch(
         `${apiUrl}/products/export_excel/`, // ĐÃ DÙNG biến môi trường
@@ -373,7 +371,9 @@ export default function AdminPage() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Export API failed response:", errorText);
-        throw new Error(`Failed to download file. Server response: ${response.status}`);
+        throw new Error(
+          `Failed to download file. Server response: ${response.status}`
+        );
       }
 
       // Chuyển response thành Blob
@@ -429,10 +429,7 @@ export default function AdminPage() {
           delete payload.transaction_id;
         }
 
-        await apiClient.patch(
-          `/tracking/events/${editingEventId}/`,
-          payload
-        );
+        await apiClient.patch(`/tracking/events/${editingEventId}/`, payload);
       } else {
         // Chỉ Retailer (hoặc Manager) mới được tạo Request
         if (userRole === "retailer") {
@@ -637,7 +634,7 @@ export default function AdminPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Tabs */}
-        <div className="flex gap-4 mb-8 border-b border-slate-700 overflow-x-auto">
+        <div className="flex gap-4 mb-8 border-b border-slate-700 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
           {["products", "events", "transporters", "retailers"].map((tab) => (
             <button
               key={tab}
@@ -668,8 +665,8 @@ export default function AdminPage() {
 
         {/* Search and Filter Bar */}
         <div className="mb-6 space-y-3 bg-slate-800 p-4 rounded-lg border border-slate-700">
-          <div className="flex gap-2 items-end flex-wrap">
-            <div className="flex-1 min-w-[200px]">
+          <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-end">
+            <div className="flex-1 w-full md:w-auto">
               <label className="text-sm font-medium text-slate-300 block mb-2">
                 Search
               </label>
@@ -747,7 +744,7 @@ export default function AdminPage() {
         {/* Products Tab */}
         {activeTab === "products" && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-xl font-bold text-white">
                   Manage Products
@@ -756,7 +753,7 @@ export default function AdminPage() {
                   Total: {filteredProducts.length} products
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <Button
                   onClick={handleExportExcel}
                   disabled={isExporting}
@@ -1412,7 +1409,7 @@ export default function AdminPage() {
         {/* Transporters Tab */}
         {activeTab === "transporters" && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-xl font-bold text-white">
                   Manage Transporters
@@ -1625,7 +1622,7 @@ export default function AdminPage() {
         {/* Retailers Tab */}
         {activeTab === "retailers" && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-xl font-bold text-white">
                   Manage Retailers
