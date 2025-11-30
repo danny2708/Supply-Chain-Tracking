@@ -27,8 +27,8 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // 🚨 ĐÃ SỬA LỖI: Lấy URL API từ biến môi trường
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
-
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
 
 export default function TrackPage() {
   const [productId, setProductId] = useState("");
@@ -114,7 +114,7 @@ export default function TrackPage() {
     try {
       // 🚨 ĐÃ SỬA: Sử dụng API_URL cho products
       const productUrl = `${API_URL}/products/${searchId}/`;
-      
+
       // GỌI API - Lấy thông tin sản phẩm
       const response = await fetch(productUrl);
 
@@ -130,21 +130,18 @@ export default function TrackPage() {
 
       const data = await response.json();
       setProduct(data);
-      
+
       // GỌI API - Lấy các sự kiện tracking
       // 🚨 ĐÃ SỬA: Sử dụng API_URL cho events
-      const eventsUrl = `${API_URL}/tracking/events/?product_id=${searchId}`;
+      const eventsUrl = `${API_URL}/products/${searchId}/history/`;
       const eventsRes = await fetch(eventsUrl);
-      
+
       if (eventsRes.ok) {
         const eventsData = await eventsRes.json();
-
-        // Kiểm tra nếu backend trả về dạng phân trang (có results)
-        if (eventsData.results && Array.isArray(eventsData.results)) {
-          setEvents(eventsData.results);
-        } else if (Array.isArray(eventsData)) {
-          // Nếu backend trả về mảng trực tiếp
+        if (Array.isArray(eventsData)) {
           setEvents(eventsData);
+        } else if (eventsData.results && Array.isArray(eventsData.results)) {
+          setEvents(eventsData.results);
         } else {
           setEvents([]);
         }
@@ -193,7 +190,7 @@ export default function TrackPage() {
             isLoading ? "opacity-0" : "opacity-100"
           }`}
         />
-        </div>
+      </div>
     );
   };
 
@@ -348,8 +345,71 @@ export default function TrackPage() {
           </Alert>
         )}
 
+        {isLoading && (
+          <div className="space-y-6">
+            {/* Skeleton: Product Information */}
+            <Card className="bg-slate-800 border-slate-700 animate-pulse">
+              <CardHeader>
+                <div className="h-6 w-48 bg-slate-700 rounded"></div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex gap-6 flex-col md:flex-row">
+                  {/* Image Skeleton */}
+                  <div className="w-20 h-20 bg-slate-700 rounded shrink-0"></div>
+
+                  {/* Details Skeleton */}
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <div className="h-4 w-24 bg-slate-700 rounded mb-2"></div>
+                      <div className="h-6 w-3/4 bg-slate-600 rounded"></div>
+                    </div>
+                    <div>
+                      <div className="h-4 w-20 bg-slate-700 rounded mb-2"></div>
+                      <div className="h-6 w-1/2 bg-slate-600 rounded"></div>
+                    </div>
+                    <div>
+                      <div className="h-4 w-24 bg-slate-700 rounded mb-2"></div>
+                      <div className="h-16 w-full bg-slate-600 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dates Skeleton */}
+                <div className="grid grid-cols-2 gap-4 border-t border-slate-600 pt-4">
+                  <div className="h-10 bg-slate-700 rounded"></div>
+                  <div className="h-10 bg-slate-700 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Skeleton: Tracking Events */}
+            <Card className="bg-slate-800 border-slate-700 animate-pulse">
+              <CardHeader>
+                <div className="h-6 w-40 bg-slate-700 rounded mb-2"></div>
+                <div className="h-4 w-64 bg-slate-700 rounded"></div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Giả lập 2 event đang load */}
+                {[1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="border border-slate-600 rounded-lg p-4 space-y-3 bg-slate-700/50"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="h-10 bg-slate-600 rounded"></div>
+                      <div className="h-10 bg-slate-600 rounded"></div>
+                      <div className="h-10 bg-slate-600 rounded"></div>
+                      <div className="h-10 bg-slate-600 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Product Information */}
-        {product && (
+        {!isLoading && product && (
           <div className="space-y-6">
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>
