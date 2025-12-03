@@ -464,10 +464,15 @@ export default function AdminPage() {
   };
 
   const handleEditEvent = (event: any) => {
+    // Xử lý product_id an toàn (API có thể trả về object hoặc string/number)
+    let pId = event.product_id || event.product || "";
+    if (typeof pId === "object" && pId !== null) {
+      pId = pId.product_id || pId.id || "";
+    }
+
     setEventFormData({
       transaction_id: event.transaction_id,
-      // Backend trả về 'product' hoặc 'product_id', lấy cái nào có dữ liệu
-      product_id: event.product || event.product_id || "",
+      product_id: String(pId),
       order_status: event.order_status,
       assign_date: event.assign_date,
       received_date: event.received_date,
@@ -1337,7 +1342,7 @@ export default function AdminPage() {
                             <div>
                               <p className="text-slate-400">Product ID</p>
                               <p className="text-white font-mono">
-                                {event.product_id}
+                                {event.product_id || event.product}
                               </p>
                             </div>
                             <div>
